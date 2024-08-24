@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35219.272
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alice in Cradle XiaoMiaoICa of Mod", "Alice in Cradle XiaoMiaoICa of Mod\Alice in Cradle XiaoMiaoICa of Mod.csproj", "{4ED6C357-A00A-4FCB-9773-D99F884B9066}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4ED6C357-A00A-4FCB-9773-D99F884B9066}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ED6C357-A00A-4FCB-9773-D99F884B9066}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ED6C357-A00A-4FCB-9773-D99F884B9066}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ED6C357-A00A-4FCB-9773-D99F884B9066}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FDF29213-0EDF-4B61-B30D-CC45134DA12B}
+	EndGlobalSection
+EndGlobal
