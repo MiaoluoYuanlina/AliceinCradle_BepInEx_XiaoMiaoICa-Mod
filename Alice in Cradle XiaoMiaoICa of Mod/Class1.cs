@@ -120,11 +120,11 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             }
             if (GUILayout.Button("Mod官网")) // 按钮
             {
-                Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://www.xiaomiao-ica.top/index.php/alice-in-cradle-bepinex-mod/") { UseShellExecute = true });
             }
             if (GUILayout.Button("ModGitHub")) // 按钮
             {
-                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
             }
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
