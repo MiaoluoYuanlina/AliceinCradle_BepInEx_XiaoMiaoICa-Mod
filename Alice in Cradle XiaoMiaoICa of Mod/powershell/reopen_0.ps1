@@ -16,3 +16,4 @@ if ($process) {
 } else {
     Write-Output "未找到名为 'AliceInCradle.exe' 的进程"
 }
+ 

@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\AliceInCradle_ver025f\BepInEx\plugins\</OutputPath>
+    <OutputPath>..\..\AliceInCradle_ver025f\BepInEx\plugins\XiaoMiao_ICa\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>0</WarningLevel>
@@ -100,8 +100,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="powershell\reopen_0.ps1" />
-    <None Include="powershell\reopen_1.ps1" />
+    <EmbeddedResource Include="powershell\reopen_0.ps1" />
+    <EmbeddedResource Include="powershell\reopen_1.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Data\UnityExplorer.BIE6.Mono.dll" />
+    <Content Include="Data\UniverseLib.Mono.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
