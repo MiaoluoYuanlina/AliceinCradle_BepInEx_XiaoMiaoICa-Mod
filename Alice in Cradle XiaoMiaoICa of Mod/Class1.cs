@@ -45,15 +45,13 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
                 Directory.CreateDirectory(path);
             }
 
-
             const string Py = "XiaoMiao_ICa";
 
-
-            UnityEngine.Debug.Log("#XiaoMiaoICa.MOD:Heloo World");
-            Logger.LogInfo("#XiaoMiaoICa.MOD:Heloo World");
+            UnityEngine.Debug.Log("#XiaoMiaoICa:Heloo World");
+            Logger.LogInfo("#XiaoMiaoICa:Heloo World");
+            UnityEngine.Debug.Log("#XiaoMiaoICa: Game_PID:"+ Game_PID);
             //Logger.LogInfo("\a");
             //Logger.LogInfo(@"\a");
-
 
             Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
 
