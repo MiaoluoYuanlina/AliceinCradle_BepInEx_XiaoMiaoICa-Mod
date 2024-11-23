@@ -5,20 +5,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
+using System.Globalization;
+using System.Security.Policy;
+using System.Net;
+using System.Net.Http;
+using System.Windows.Forms;
+using System.IO;
+using System.Reflection;
+using System.Collections;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
 using HarmonyLib;
 using nel;
-using System.Globalization;
-using System.Security.Policy;
-using System.Net;
-using System.Windows.Forms;
-using System.IO;
-using System.Reflection;
 using BepInEx.Logging;
-
-
+using evt;
+using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 //using System.ComponentModel;
 //using System.Data;
 //using System.Drawing;
@@ -27,16 +32,20 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
 {
     //Mod信息
     [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "1.0.0")]
-
     //类
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
+
+        [DllImport("user32.dll", SetLastError = true)]//模拟按键
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);//模拟按键
+
         /// <summary>
         /// 启动
         /// </summary>
         /// 
         string Game_directory = null;
         int Game_PID = 0;
+
         void Start()
         {
             //获取PID
@@ -66,19 +75,29 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
 
             Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
 
+            string savedKey = PlayerPrefs.GetString("toggleKey", "F1");//快捷键
+            toggleKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), savedKey);
+
 
         }
 
-
-
+        #region GUI
+        
         /// <summary>
         /// 可视化窗口
         /// </summary>
-
+        #region 窗口_变量
         private Rect WindowsRect = new Rect(50, 50, 500, 400); // 主窗口
+        private bool showWindow = true; // 控制窗口显示/隐藏的标志
+        private KeyCode toggleKey = KeyCode.Tab; // 用户定义的快捷键
+
         private string GUI_Textstring = ""; // 输入框
         private bool GUI_TextBool = false; // 开关
         private float GUI_TextInt = 1; // 滑动条
+
+
+        private string GUI_string_toggleKey = "目前快捷键:";//快捷键
+
 
         private string GUI_string_debuggingText = "下载适用用开发的Mod进游戏中。"; // 调试_提示
 
@@ -95,20 +114,42 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
         private static bool GUI_Bool_CurrentMoney = false; // 开关_当前金币
         private float GUI_string_CurrentMoney = 1; // 输入框_当前金币
 
+        private static bool GUI_Bool_Debug = false; // 开关_游戏自带调试
+        private string GUI_string_Debug = ""; // 文字_游戏自带调试
+
         private Vector2 svPos; // 界面滑动条
+
+
+        #endregion
+
 
         void OnGUI()
         {
-            WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
+            
+
+            //WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
+            if (showWindow)
+            {
+                WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
+
+
+            }
         }
 
         public void WindowsFunc(int id)
         {
 
+            // 添加控件
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            Color redColor = new Color32(255, 0, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("本Mod包括游戏本体完全免费！为爱发电，如果你是购买而来，证明你被骗啦！", style); // 文字
+
             // 开始滚动视图
             svPos = GUILayout.BeginScrollView(svPos);
 
-            // 添加控件
+            #region 控件_尝试代码
+
             /*
             GUILayout.Label("Hello World"); // 文字
 
@@ -125,100 +166,6 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
 
 
             */
-
-            GUILayout.Label("本Mod包括游戏本体完全免费！为爱发的，如果你是购买而来，证明你被骗啦！"); // 文字
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("游戏官网")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://aliceincradle.dev") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("Mod官网")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://www.xiaomiao-ica.top/index.php/alice-in-cradle-bepinex-mod/") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("ModGitHub")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.Label("出现问题可以联系本苗哦~ 作者信息:"); // 文字
-            GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("BiliBili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/1775750067") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("X(Twitter)")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://x.com/XiaoMiao_ICa") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("QQ")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://user.qzone.qq.com/2966095351") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("GitHub")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.Label(GUI_string_debuggingText); // 文字
-            GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("下载")) // 按钮
-            {
-                try
-                {
-                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://github.com");
-                    request.Method = "GET";
-                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                    {
-                        if (response.StatusCode == HttpStatusCode.OK)
-                        {
-                            XM_log("github 可正常访问",1);
-
-                        }
-                        else
-                        {
-                            XM_log("github无法访问，状态码: " + response.StatusCode,1);
-                        }
-                    }
-                }
-                catch (WebException ex)
-                {
-                    GUI_string_debuggingText = GUI_string_debuggingText + " \ngithub无法访问因此无法下载重要文件。状态码: " + ex.Message;
-                }
-
-            }
-
-
-
-
-
-            //if (GUILayout.Button("重启游戏到游玩模式")) // 按钮
-            //{
-
-            //    ProcessStartInfo startInfo = new ProcessStartInfo
-            //    {
-            //        FileName = "powershell.exe",
-            //        Arguments = "-File \"./XiaoMiaoICa_Mod_Data/reopen_0.ps1\"", // 使用相对路径
-            //        UseShellExecute = false,
-            //        CreateNoWindow = true
-            //    };
-            //    Process process = new Process
-            //    {
-            //        StartInfo = startInfo
-            //    };
-            //    process.Start();// 不等待进程退出
-            //}
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-
             /*
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
             if (GUILayout.Button("BiliBili")) // 按钮
@@ -239,7 +186,18 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             }
             GUILayout.EndHorizontal();
             */
+            #endregion
 
+            #region 控件_mod功能
+
+
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("设置窗口隐藏显示快捷键")) // 按钮
+            {
+                StartCoroutine(SetCustomKey());//调用函数
+            }
+            GUILayout.Label(GUI_string_toggleKey + toggleKey); // 文字
+            GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
             GUILayout.BeginVertical();//竖排
@@ -247,7 +205,6 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             GUILayout.Label("有的部分是在游戏CG上就已经除了过了，所以不一定全部地方生效。"); // 文字
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
-
 
             GUILayout.BeginVertical(GUI.skin.box);//竖排
             GUILayout.BeginHorizontal();//横排
@@ -281,21 +238,177 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             GUILayout.EndHorizontal();
 
 
-            /*
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
             GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("Text")) // 按钮
+            GUILayout.Label("使用游戏原版调试Debug");
+            if (GUILayout.Button("启用该功能")) // 按钮
             {
-                //NelAttackInfoPatch();
+                // 定义文件路径
+                string filePath = $"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\_debug.txt";
+                // 读取文件内容
+                string content = File.ReadAllText(filePath);
+                // 替换文本
+                string modifiedContent = content.Replace("timestamp 0", "timestamp 1");
+                modifiedContent = modifiedContent.Replace("announce 0", "announce 1");
+                // 将修改后的内容写回文件
+                File.WriteAllText(filePath, modifiedContent);
+                XM_log("_debug.txt 文件内容已成功更新！",2);
+                GUI_string_Debug = "你需要重启游戏，此功能才会生效！";
+
             }
-            if (GUILayout.Button("Text")) // 按钮
+            if (GUILayout.Button("关闭该功能")) // 按钮
             {
+                // 定义文件路径
+                string filePath = $"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\_debug.txt";
+                // 读取文件内容
+                string content = File.ReadAllText(filePath);
+                // 替换文本
+                string modifiedContent = content.Replace("timestamp 1", "timestamp 0");
+                // 将修改后的内容写回文件
+                File.WriteAllText(filePath, modifiedContent);
+                XM_log("_debug.txt 文件内容已成功更新！", 1);
+                GUI_string_Debug = "你需要重启游戏，此功能才会生效！";
             }
-            if (GUILayout.Button("Text")) // 按钮
+            //if (GUILayout.Button("打开/关闭 GUI F7")) // 按钮
+            //{
+            //    strikeF7();
+            //}
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("启用后点击F7开启关闭GUI！");
+            GUILayout.Label(GUI_string_Debug, style);
+            GUILayout.EndHorizontal();
+            GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
+                "\n╔< 汉化栏" +
+                "\n╠══╦⇒ ? ↴ " +
+                "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
+                "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
+                "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
+                "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
+                "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
+                "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
+                "\n╟    ╚═⇒ seed ⇄ 种子" +
+                "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
+                "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
+                "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
+                "\n╟    ╠═⇒ pos ⇄ 坐标" +
+                "\n╟    ╚══> 右边的敌队生物翻译一样。" +
+                "\n╠══╦⇒ item ⇄ 物品" +
+                "\n╟    ╠═⇒ Grade ⇄ 数量" +
+                "\n╟    ╠═⇒ Money ⇄ 钱币" +
+                "\n╟    ╠═⇒ All ⇄ 全部物品" +
+                "\n╟    ╠═⇒ CURE ⇄ 治疗" +
+                "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
+                "\n╟    ╠═⇒ MTR ⇄ 材料" +
+                "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
+                "\n╟    ╠═⇒ WATER ⇄ 水" +
+                "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
+                "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
+                "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
+                "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
+                "\n╟    ╠═⇒ TOOL ⇄ 工具" +
+                "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
+                "\n╟    ╠═⇒ SKILL ⇄ 技能" +
+                "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
+                "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
+                "\n⇓" +
+                "\n待更新");
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 控件_MID信息
+
+
+            
+
+            // 在顶部插空白空间
+            GUILayout.Space(50);
+
+
+            // 设置一个水平布局，用来控制垂直布局的位置
+            GUILayout.BeginHorizontal();
+            // 在左侧插入一个可伸缩的空白空间，使垂直布局水平居中
+            GUILayout.FlexibleSpace();
+            // 设置垂直布局
+            GUILayout.BeginVertical();
+            // 在垂直布局的顶部插入一个可伸缩的空白空间，使内容垂直居中
+            GUILayout.FlexibleSpace();
+
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(100));//竖排
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("隐藏窗口")) // 按钮
             {
+                showWindow = !showWindow; // 切换窗口显示状态
+            }
+            if (GUILayout.Button("游戏官网")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://aliceincradle.dev") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("Mod官网")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://www.xiaomiao-ica.top/index.php/alice-in-cradle-bepinex-mod/") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("ModGitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("重启游戏")) // 按钮
+            {
+                RestartApplication();
             }
             GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
 
-            */
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.Label("出现问题可以联系本苗哦~ 作者信息:"); // 文字
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("BiliBili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/1775750067") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("X(Twitter)")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://x.com/XiaoMiao_ICa") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("QQ")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://user.qzone.qq.com/2966095351") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.Label(GUI_string_debuggingText); // 文字
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("sinai-dev-UnityExplorer")) // 按钮
+            {
+                
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndHorizontal();
+
+            // 在垂直布局的底部插入一个可伸缩的空白空间
+            GUILayout.FlexibleSpace();
+            // 结束垂直布局
+            GUILayout.EndVertical();
+            // 在右侧插入一个可伸缩的空白空间，使垂直布局水平居中
+            GUILayout.FlexibleSpace();
+            // 结束水平布局
+            GUILayout.EndHorizontal();
+
+            //if (GUILayout.Button("Text")) // 按钮
+            //{
+            //}
+
+            // 在顶部插空白空间
+            GUILayout.Space(50);
 
             // 结束滚动视图
             GUILayout.EndScrollView();
@@ -303,6 +416,73 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             // 允许拖动窗口
             GUI.DragWindow();
 
+
+            
+
+            #endregion
+        }
+
+        public static void RestartApplication()//重启游戏
+        {
+            try
+            {
+                string appPath = Process.GetCurrentProcess().MainModule.FileName;
+                string workingDirectory = Path.GetDirectoryName(appPath);
+
+                // 确保路径不为空，并且应用程序文件存在
+                if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
+                {
+                    // 设置工作目录为当前应用程序的目录，以便 BepInEx 正常加载
+                    ProcessStartInfo startInfo = new ProcessStartInfo
+                    {
+                        FileName = appPath,
+                        WorkingDirectory = workingDirectory, // 设置工作目录
+                        UseShellExecute = true,
+                        Verb = "runas" // 确保重新启动时以管理员权限运行
+                    };
+
+                    Process.Start(startInfo);
+                }
+
+                // 强制终止当前进程
+                Process.GetCurrentProcess().Kill();
+            }
+            catch (Exception ex)
+            {
+                // 记录日志或显示错误信息
+                Console.WriteLine($"重启失败：{ex.Message}");
+            }
+        }
+        #endregion
+        //快捷键设置
+        IEnumerator SetCustomKey()
+        {
+            XM_log("请点击一个按键！", 1);
+            while (!Input.anyKeyDown)
+            {
+                GUI_string_toggleKey = "请点击键盘上的一个按键 目前快捷键:";
+                yield return null; // 等待用户按下一个键
+            }
+
+            // 获取用户按下的键并保存
+            foreach (KeyCode keyCode in System.Enum.GetValues(typeof(KeyCode)))
+            {
+                if (Input.GetKeyDown(keyCode))
+                {
+                    toggleKey = keyCode;
+                    PlayerPrefs.SetString("toggleKey", keyCode.ToString());
+                    PlayerPrefs.Save();
+                    XM_log ("快捷键设置为了: " + keyCode , 1);
+                    GUI_string_toggleKey = "目前快捷键:";
+                    if (keyCode == KeyCode.Mouse0)
+                    {
+                        toggleKey = KeyCode.Tab;
+                        GUI_string_toggleKey = "此快捷不可用 目前快捷键:";
+
+                    }
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -313,12 +493,16 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             if (Input.GetKeyDown(KeyCode.P))
             {
 
-                Logger.LogInfo("#XiaoMiaoICa.MOD:Heloo World");
-
-
+            }
+            //if (Input.GetKeyDown(KeyCode.Tab)) // 替换为你想要的快捷键
+            //{
+            //    showWindow = !showWindow; // 切换窗口显示状态
+            //}
+            if (Input.GetKeyDown(toggleKey))
+            {
+                showWindow = !showWindow; // 切换窗口显示状态
             }
         }
-
 
         /// <summary>
         /// 监听游戏MosaicShower函数 前置 
@@ -332,6 +516,7 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             if (GUI_Bool_BanMosaic == true)
             {
                 XM_log("拦截了MosaicShower函数的执行。", 2);
+
                 return false;
             }
             else
@@ -368,36 +553,18 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             }
         }
 
-
-       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /*
-        // 使用 Harmony 修补 addCount 方法，明确指定参数类型
-        [HarmonyPatch(typeof(CoinStorage), "addCount", new Type[] { typeof(int), typeof(CoinStorage.CTYPE), typeof(bool) })]
-        public static class CoinStorage_AddCount_Patch
+        /// <summary>
+        /// 监听游戏initMagicItem函数
+        /// 调试
+        /// </summary>
+        [HarmonyPatch(typeof(EV), "initDebugger")]
+        public static class EV_initDebugger_Patch
         {
-            static void Prefix(ref int v, CoinStorage.CTYPE ctype = CoinStorage.CTYPE.GOLD, bool show_log = true)
+            public static void Postfix(bool execute_debugger_initialize)
             {
-                // 将金币数量加倍（或任何你想要的修改）
-                v *= 2;
-                XM_log($"金币返回值修改为: {v}",1);
+                XM_log($"initMagicItem传入函数的变量信息:[init_aimpos_to_d={execute_debugger_initialize}]", 2);
             }
         }
-        */
 
         void Mod_Set_Money(int desiredCoinAmount)
         {
@@ -416,8 +583,10 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             {
                 CoinStorage.reduceCount(-amountToAdd, CoinStorage.CTYPE.GOLD);
                 XM_log("金币已修改为: " + desiredCoinAmount, 1);
+
             }
         }
+
 
 
         /// <summary>
@@ -451,6 +620,7 @@ namespace Alice_in_Cradle_XiaoMiaoICa_of_Mod
             }
             
         }
+        
 
         
 
