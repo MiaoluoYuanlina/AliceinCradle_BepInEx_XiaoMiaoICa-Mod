@@ -35,6 +35,7 @@ namespace installer_Mod
         static string LOG_save = "";//日志
         static bool abort(int return_int)//结束程序
         {
+            DeletePath(Directory.GetCurrentDirectory() + "/Temp");//删除Temp文件夹
             string LogID = "-1";
             if (return_int != 0)
             {
@@ -58,10 +59,30 @@ namespace installer_Mod
                 {
                     WriteLine_color("ModMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", ConsoleColor.Red);
                     MessageBox.Show("ModMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }else if (return_int == 5)
+                }
+                else if (return_int == 5)
                 {
                     WriteLine_color("游戏路径包含中文!BepEx不支持中文路径!\n请将游戏复制到没有中文的目录!", ConsoleColor.Red);
                     MessageBox.Show("游戏路径包含中文!BepEx不支持中文路径!\n请将游戏复制到没有中文的目录!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 6)
+                {
+                    WriteLine_color("获取MD5验证值失败!", ConsoleColor.Red);
+                    MessageBox.Show("获取MD5验证值失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 7) 
+                {
+                    WriteLine_color("获取Mod下载链接失败!", ConsoleColor.Red);
+                    MessageBox.Show("获取Mod下载链接失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 8)
+                {
+                    WriteLine_color("解析GitHub下载地址失败!", ConsoleColor.Red);
+                    MessageBox.Show("解析GitHub下载地址失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }else
+                {
+                    WriteLine_color("未知错误!", ConsoleColor.Red);
+                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 if (MessageBox.Show("你在运行本程序时出现了问题!\n你可以尝试联系本苗!本苗会帮助你解决一些问题~\n记得带上你的终端截图!要不从雨来了也帮不了你啦~\n\n是否要联系本苗?", "欧尼酱~你想要帮助吗?", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
@@ -77,8 +98,8 @@ namespace installer_Mod
             WriteLine_color("你的本次运行被分配了ID:"+LogID, ConsoleColor.Blue);
             SendDataToServer(LOG_save, return_int.ToString());
             Thread.Sleep(1000);
-            WriteLine_color("运行结束！点击回车结束程序!", ConsoleColor.Green);
-            Console.ReadLine(); // 等待用户按下回车键
+            //WriteLine_color("运行结束！点击任意键结束程序!", ConsoleColor.Green);
+            //Console.ReadKey();//等待点击
             Environment.Exit(return_int);
             return true;
         }
@@ -316,6 +337,32 @@ namespace installer_Mod
                 Console.WriteLine($"创建目录时发生错误: {ex.Message}");
             }
         }
+        static void DeletePath(string folderPath)//删除目录
+        {
+            // 判断文件夹是否存在
+            if (Directory.Exists(folderPath))
+            {
+                // 删除文件夹中的所有文件
+                foreach (var file in Directory.GetFiles(folderPath))
+                {
+                    // 删除单个文件
+                    File.Delete(file);
+                }
+                // 删除文件夹中的所有子文件夹
+                foreach (var subDirectory in Directory.GetDirectories(folderPath))
+                {
+                    // 递归调用删除子文件夹
+                    DeletePath(subDirectory);
+                }
+                // 删除文件夹本身
+                Directory.Delete(folderPath);
+            }
+            else
+            {
+                // 如果文件夹不存在，输出提示信息
+                Console.WriteLine("指定的文件夹不存在.");
+            }
+        }
         static string GetFileMd5(string filePath)//获取文件MD5值
         {
             if (!File.Exists(filePath))
@@ -403,8 +450,52 @@ namespace installer_Mod
             }
             return width;
         }
+        static string GetGitHubDownloadUrl(string url)//获取GitHub下载链接
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                // 设置请求头
+                client.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3.raw");
+                client.DefaultRequestHeaders.Add("User-Agent", "C# App"); // GitHub API 需要 User-Agent
+
+                try
+                {
+                    // 发送 GET 请求
+                    HttpResponseMessage response = client.GetAsync(url).Result; 
+
+                    // 如果响应成功，返回最终的 URL
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return response.RequestMessage.RequestUri.ToString();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
+
+            return null; // 如果失败，返回 null
+        }
         static async Task Main(string[] args)//主函数
         {
+            #region Text
+            if (false == true)
+            {
+                Console.SetCursorPosition(0, 0);
+                Console.Write($"1");
+                Console.SetCursorPosition(1, 1);
+                Console.Write($"2");
+                Console.SetCursorPosition(2, 2);
+                Console.Write($"3");
+                Console.SetCursorPosition(3, 3);
+                Console.Write($"a");
+                Console.SetCursorPosition(4, 4);
+                Console.Write($"b");
+                Console.SetCursorPosition(5, 5);
+                Console.Write($"c");
+            }
+            #endregion
             #region 声明
             string[] lines = {
             "",
@@ -415,18 +506,28 @@ namespace installer_Mod
             "",
             "",
             "Py：XiaoMiao_ICa or 苗萝缘莉雫",
-            "GPL-3.0 许可证",
+            "GPL-3.0 开源许可",
             "适用于 Alice In Cradle 的 bepinex 框架Mod一键安装程序",//10
             "理论适配游戏全部版本！",
             "本程序仅供学习参考 GitHub项目:repo:MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod",
-            "＞︿＜",
+            "Ciallo～(∠・ω< )⌒☆​",
             "Mod及游戏本体都是免费的，如果你是购买而来，证明你被骗啦~",
             "本程序会收集你的日志来更好的维护，如果您不同意，请立即关闭此程序。",
             "",
             "",
             "",
             "",
-            ""//20
+            "",//20
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""//30
             };
             ConsoleColor[] colors = {
             ConsoleColor.White,
@@ -448,9 +549,19 @@ namespace installer_Mod
             ConsoleColor.White,
             ConsoleColor.White,
             ConsoleColor.White,
+            ConsoleColor.White,//20
             ConsoleColor.White,
             ConsoleColor.White,
-            ConsoleColor.White//20
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White,
+            ConsoleColor.White//30
             };
             // 获取终端窗口的宽度
             int consoleWidth = Console.WindowWidth;
@@ -464,18 +575,77 @@ namespace installer_Mod
                 Console.WriteLine(line);
                 Console.ResetColor();
             }
-            Thread.Sleep(5000); // 等待
+            for (int i = 0; i < 5; i++)
+            {
+                Console.SetCursorPosition(5, 2);
+                Console.Write(""+(5-i)+"秒后开始运行");
+                Thread.Sleep(1000); // 等待
+            }
+            Console.SetCursorPosition(5, 2);
+            Console.Write("               ");
             for (int i = 0; i < 30; i++)
             {
                 Console.WriteLine("\n");
             }
             #endregion
+            #region 获取进程
+            int Game_pid = 0;
+            int while_a = 49;
+            string Gmae_Path_incomplete = "";
+            string Gmae_Path = "";
+            while (true)
+            {
+                Game_pid = Name_Get_PID("AliceInCradle"); // 查找进程
+                if (Game_pid != 0)
+                {
+                    Console.WriteLine("\n");
+                    WriteLine_color("GamePID: " + Game_pid, ConsoleColor.Blue);
+                    Gmae_Path_incomplete = Pid_Get_Path(Game_pid);
+                    Gmae_Path = Get_Parent_Directory(Gmae_Path_incomplete);
+                    WriteLine_color("GmaePath " + Gmae_Path_incomplete, ConsoleColor.Blue);
+                    Kill_Pid(Game_pid); // 结束进程
+                    break; // 找到进程，退出循环
+                }
+                while_a = while_a + 1;
+                if (while_a >= 30)
+                {
+                    while_a = 0;
+                    Console.SetCursorPosition(0, Console.CursorTop);
+
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write($"游戏未运行，请开启游戏！");
+                    Console.ResetColor();
+                }
+                if (while_a == 20)
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop);
+
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write($"游戏未运行，请开启游戏！");
+                    Console.ResetColor();
+                }
+                if (while_a == 10)
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop);
+
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.Write($"游戏未运行，请开启游戏！");
+                    Console.ResetColor();
+                }
+                Thread.Sleep(100); // 等待
+            }
+            if (ContainsCJKCharacters(Gmae_Path) == true)
+            {
+                abort(5);
+            }
+            #endregion
             #region 动态获取URL
             WriteLine_color("检查本苗服务器可用性......", ConsoleColor.Blue);
+            #region 测试延迟
             double URL_delay = 0;
             for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(1100);
+                Thread.Sleep(300);
                 double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiao-ica.top");
                 WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
                 if (responseTime >= 0)
@@ -501,14 +671,14 @@ namespace installer_Mod
 
             string download_url_BepEx = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
             string MD5_BepEx = "d42de011d504ea560cbb940318403489";
-            string download_url_Mod = "http://miaoluoyuanlina.github.io/AIC/Mod/XiaoMiaoICa_AIC_Mod.dll";
+            string download_url_Mod_downloadText = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
             string MD5_url_Mod = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
-
+            string agentURL_Mod = "";
             URL_delay = 0;
             WriteLine_color("检查github官网可用性......", ConsoleColor.Blue);
             for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(300);
                 double responseTime = await GetUrlResponseTimeAsync("https://miaoluoyuanlina.github.io");
                 WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
                 if (responseTime >= 0)
@@ -531,15 +701,17 @@ namespace installer_Mod
                 URL_delay = 0;
                 WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
                 WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                download_url_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + download_url_Mod;
-                MD5_url_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + MD5_url_Mod;
+                agentURL_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=";
+                download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
+                MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
+                
             }
 
             URL_delay = 0;
             WriteLine_color("检查BepEx官网可用性......", ConsoleColor.Blue);
             for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(300);
                 double responseTime = await GetUrlResponseTimeAsync("https://builds.bepinex.dev");
                 WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
                 if (responseTime >= 0)
@@ -563,44 +735,47 @@ namespace installer_Mod
                 WriteLine_color("改用代理Url", ConsoleColor.Yellow);
                 download_url_BepEx = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + download_url_BepEx;
             }
+            #endregion
+            #region URL获取
+            string MD5_Mod = "";
+            for (int i = 0; i < 3; i++)
+            {
+                MD5_Mod = GetUrlTxt(MD5_url_Mod);
+                //Console.WriteLine(MD5_Mod.Contains("发生错误："));
+                if (MD5_Mod.Contains("发生错误：") == false)
+                {
+                    break; 
+                }
+                if (i == 2 )
+                {
+                    WriteLine_color("获取MD5失败", ConsoleColor.Red);
+                    abort(6);
+                }
+            }
 
-            string MD5_Mod = GetUrlTxt(MD5_url_Mod);
-            MD5_Mod= RemoveEmptyLines(MD5_Mod);
+            string download_url_Mod = "";
+            for (int i = 0; i < 3; i++)
+            {
+                download_url_Mod = agentURL_Mod + GetUrlTxt(download_url_Mod_downloadText);
+                //Console.WriteLine(MD5_Mod.Contains("发生错误："));
+                if (download_url_Mod.Contains("发生错误：") == false)
+                {
+                    break;
+                }
+                if (i == 2)
+                {
+                    WriteLine_color("获取Mod下载链接失败！", ConsoleColor.Red);
+                    abort(7);
+                }
+            }
+            MD5_Mod = RemoveEmptyLines(MD5_Mod);
+            download_url_Mod = RemoveEmptyLines(download_url_Mod);
             WriteLine_color("分配的URL信息", ConsoleColor.Cyan);
             WriteLine_color("download_url_BepEx:" + download_url_BepEx, ConsoleColor.Cyan);
             WriteLine_color("MD5_BepEx:" + MD5_BepEx, ConsoleColor.Cyan);
             WriteLine_color("download_url_Mod:" + download_url_Mod, ConsoleColor.Cyan);
             WriteLine_color("MD5_Mod:" + MD5_Mod, ConsoleColor.Cyan);
             #endregion
-            #region 获取进程
-            int Game_pid = 0;
-            int while_a = 49;
-            string Gmae_Path_incomplete = "";
-            string Gmae_Path = "";
-            while (true)
-            {
-                Game_pid = Name_Get_PID("AliceInCradle"); // 查找进程
-                if (Game_pid != 0)
-                {
-                    WriteLine_color("GamePID: " + Game_pid, ConsoleColor.Blue);
-                    Gmae_Path_incomplete = Pid_Get_Path(Game_pid);
-                    Gmae_Path = Get_Parent_Directory(Gmae_Path_incomplete);
-                    WriteLine_color("GmaePath " + Gmae_Path_incomplete, ConsoleColor.Blue);
-                    Kill_Pid(Game_pid); // 结束进程
-                    break; // 找到进程，退出循环
-                }
-                while_a = while_a + 1;
-                if (while_a >= 50)
-                {
-                    while_a = 0;
-                    WriteLine_color("游戏未启动!请启动游戏!", ConsoleColor.Cyan);
-                }
-                Thread.Sleep(100); // 等待
-            }
-            if (ContainsCJKCharacters(Gmae_Path)==true)
-            {
-                abort(5);
-            }
             #endregion
             #region 安装mod
             WriteLine_color("程序运行目录" + Directory.GetCurrentDirectory(), ConsoleColor.Cyan);//显示程序运行目录
@@ -608,25 +783,33 @@ namespace installer_Mod
             DownloadFile(download_url_BepEx, Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//下载BepEx
             string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
             WriteLine_color("下载文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
-            if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
             {
                 WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
-            }
-            else
+            }else
             {
                 abort(3);
                 WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
             }
             ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip", Gmae_Path);//解压BepEx
             CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");//创建BepEx的Mod文件夹
-            DownloadFile(download_url_Mod, Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//下载Mod
+            WriteLine_color("正在尝试解析的下载github地址......", ConsoleColor.Blue);
+            Console.WriteLine(download_url_Mod);
+            string Git_download_url_Mod = agentURL_Mod + GetGitHubDownloadUrl(download_url_Mod);
+            Console.WriteLine(Git_download_url_Mod);
+            if (Git_download_url_Mod == null)
+            {
+                abort(8);
+                WriteLine_color("解析GitHub链接失败", ConsoleColor.Red);
+            }
+            WriteLine_color("解析到的下载地址:" + Git_download_url_Mod, ConsoleColor.Blue);
+            DownloadFile(Git_download_url_Mod, Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//下载Mod
             string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
             WriteLine_color("下载文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
-            if (string.Equals(MD5_Mod, Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(MD5_Mod, Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
             {
                 WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
-            }
-            else
+            }else
             {
                 abort(4);
                 WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
