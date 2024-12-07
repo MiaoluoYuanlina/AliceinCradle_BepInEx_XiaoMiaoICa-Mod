@@ -621,7 +621,6 @@ namespace installer_Mod
             #region 下载游戏
             WriteLine_color("\n程序运行目录" + Directory.GetCurrentDirectory(), ConsoleColor.Cyan);//显示程序运行目录
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
-
             if (start_D == true)
             {
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
@@ -773,7 +772,7 @@ namespace installer_Mod
             {
                 URL_delay = URL_delay / 3;
             }
-            if (URL_delay < 1100 && URL_delay != -1)
+            if (URL_delay < 1500 && URL_delay != -1)
             {
                 WriteLine_color("github官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
             }
@@ -809,7 +808,7 @@ namespace installer_Mod
             {
                 URL_delay = URL_delay / 3;
             }
-            if (URL_delay < 1100 && URL_delay != -1)
+            if (URL_delay < 1500 && URL_delay != -1)
             {
                 WriteLine_color("BepEx官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
             }
