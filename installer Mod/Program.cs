@@ -18,11 +18,26 @@ using Newtonsoft.Json;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
+using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
+
+
+
+
 
 namespace installer_Mod
 {
     internal class Program
     {
+        #region 常量
+        readonly string OFFLINE_MOD_MOD5 = "36A885A1E5AB51641588A21530095276";
+        readonly string OFFLINE_BPEEX_MOD5 = "d42de011d504ea560cbb940318403489";
+        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
+        readonly string ONLINE_MD5_BEPEX = "d42de011d504ea560cbb940318403489";
+        readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
+        readonly string ONLINE_MD5_URL_MOD = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
+        #endregion
+
         static string LOG_save = "";//日志
         static bool abort(int return_int)//结束程序
         {
@@ -80,6 +95,26 @@ namespace installer_Mod
                 {
                     WriteLine_color("解压游戏本体失败！", ConsoleColor.Red);
                     MessageBox.Show("解压游戏本体失败！", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 11)
+                {
+                    WriteLine_color("BepExMD5导出失败。\n这可能是文件被某些其他程序占用", ConsoleColor.Red);
+                    MessageBox.Show("BepExMD5导出失败。\n这可能是文件被某些其他程序占用", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 12)
+                {
+                    WriteLine_color("MOD导出失败。\n这可能是文件被某些其他程序占用", ConsoleColor.Red);
+                    MessageBox.Show("MOD导出失败。\n这可能是文件被某些其他程序占用", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 13)
+                {
+                    WriteLine_color("未知错误!", ConsoleColor.Red);
+                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else if (return_int == 14)
+                {
+                    WriteLine_color("未知错误!", ConsoleColor.Red);
+                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 else
                 {
@@ -496,34 +531,79 @@ namespace installer_Mod
             // 保存快捷方式
             shortcut.Save();
         }
+        static bool ExportEmbedResources(string FileName, string Path) // 导出嵌入资源
+        {
+            try
+            {
+                // 获取当前程序集
+                Assembly assembly = Assembly.GetExecutingAssembly();
+
+                // 构造嵌入资源的完整名称
+                string resourceName = $"installer_Mod.{FileName}";
+
+                // 检查资源是否存在
+                using (Stream resourceStream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (resourceStream == null)
+                    {
+                        Console.WriteLine($"嵌入资源未找到：{resourceName}");
+                        return false;
+                    }
+
+                    // 将嵌入的资源导出到文件系统
+                    using (FileStream fileStream = new FileStream(Path, FileMode.Create, FileAccess.Write))
+                    {
+                        resourceStream.CopyTo(fileStream);
+                    }
+
+                    Console.WriteLine($"资源已成功导出到: {Path}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"导出失败: {ex.Message}");
+                return false;
+            }
+        }
         static async Task Main(string[] args)//主函数
         {
-            
             #region Text
-            if (false == true)
+            if (true == false)
             {
-                
-                //Console.WriteLine($"D: {start_D}");
-                //Console.WriteLine($"P: {start_P}");
-                Environment.Exit(0);
-            }
-            #endregion
-            #region 启动参数
-            bool start_D = false;
-            string start_P = "";
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] == "--P")
-                {
-                    start_P = args[i + 1];
-                    i++;
-                }
-                else if (args[i] == "-D")
-                {
-                    start_D = true;
-                }
+                ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", "G:\\My_file\\C#\\AIC\\Alice in Cradle XiaoMiaoICa of Mod\\installer Mod\\bin\\x64\\Release\\Temp\\111");
             }
 
+            #endregion
+            #region 变量定义
+            Program program = new Program();
+            #endregion
+            #region 启动参数
+            bool start_DownloadGame = false;
+            string start_Path = "";
+            bool start_ExportEmbed_Mod = false;
+            bool start_ExportEmbed_BepEx = false;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--Path")//路径
+                {
+                    start_Path = args[i + 1];
+                    i++;
+                }
+                else if (args[i] == "-DownloadGame")//下载游戏
+                {
+                    start_DownloadGame = true;
+                }
+                else if (args[i] == "-ExportEmbed_Mod")//导出切入资源
+                {
+                    start_ExportEmbed_Mod = true;
+                }
+                else if (args[i] == "-ExportEmbed_BepEx")//导出切入资源
+                {
+                    start_ExportEmbed_BepEx = true;
+
+                }
+            }
             #endregion
             #region 声明
             string[] lines = {
@@ -621,11 +701,14 @@ namespace installer_Mod
             #region 下载游戏
             WriteLine_color("\n程序运行目录" + Directory.GetCurrentDirectory(), ConsoleColor.Cyan);//显示程序运行目录
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
-            if (start_D == true)
+            if (start_DownloadGame == true)
             {
+                WriteLine_color("目前尝试下载版本:0.27a2", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
-                DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/OQ7nbwyP_Win%20ver026c2.zip", Directory.GetCurrentDirectory() + "/Temp/AIC_Win_ver026c2.zip");
-                if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/AIC_Win_ver026c2.zip"))
+                string URL_FILE_NAME = "trPsaFVH_Win_ver027a2.zip";
+                DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
+
+                if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME))
                 {
                     WriteLine_color("下载成功！", ConsoleColor.Blue);
                 }
@@ -636,9 +719,9 @@ namespace installer_Mod
                 }
                 CreatePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
                 WriteLine_color("解压游戏......", ConsoleColor.Blue);
-                ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/AIC_Win_ver026c2.zip", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
-                start_P = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle/Win ver026/AliceInCradle_ver026/AliceInCradle.exe";
-                if (System.IO.File.Exists(start_P))
+                ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
+                start_Path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle/Win ver026/AliceInCradle_ver026/AliceInCradle.exe";
+                if (System.IO.File.Exists(start_Path))
                 {
                     WriteLine_color("解压成功！", ConsoleColor.Blue);
                 }
@@ -647,10 +730,10 @@ namespace installer_Mod
                     abort(10);
                     WriteLine_color("解压游戏本体失败！", ConsoleColor.Red);
                 }
-                CreateShortcut(start_P, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Desktop/Alice In Cradle.lnk");
-                CreateShortcut(start_P, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Alice In Cradle.lnk");
+                CreateShortcut(start_Path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Desktop/Alice In Cradle.lnk");
+                CreateShortcut(start_Path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Alice In Cradle.lnk");
                 
-                WriteLine_color(start_P, ConsoleColor.DarkCyan);
+                WriteLine_color(start_Path, ConsoleColor.DarkCyan);
             }
             #endregion
             #region 获取进程
@@ -658,7 +741,7 @@ namespace installer_Mod
             int while_a = 49;
             string Gmae_Path_incomplete = "";
             string Gmae_Path = "";
-            if (start_P == "")
+            if (start_Path == "")
             {
                 while (true)
                 {
@@ -706,7 +789,7 @@ namespace installer_Mod
                     abort(5);
                 }
             }else{
-                Gmae_Path_incomplete = start_P;
+                Gmae_Path_incomplete = start_Path;
                 Gmae_Path = Get_Parent_Directory(Gmae_Path_incomplete);
                 WriteLine_color("GamePID: " + Game_pid, ConsoleColor.Blue);
                 WriteLine_color("GmaePath " + Gmae_Path_incomplete, ConsoleColor.Blue);
@@ -717,143 +800,164 @@ namespace installer_Mod
             WriteLine_color("检查本苗服务器可用性......", ConsoleColor.Blue);
             #region 测试延迟
             double URL_delay = 0;
-            for (int i = 0; i < 3; i++)
+            if (start_ExportEmbed_BepEx == false && start_ExportEmbed_Mod == false)
             {
-                Thread.Sleep(300);
-                double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiao-ica.top");
-                WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                if (responseTime >= 0)
+                
+                for (int i = 0; i < 3; i++)
                 {
-                    URL_delay = URL_delay + responseTime;
+                    Thread.Sleep(300);
+                    double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiao-ica.top");
+                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
+                    if (responseTime >= 0)
+                    {
+                        URL_delay = URL_delay + responseTime;
+                    }
+                    else
+                    {
+                        abort(1);
+                        break; // 发生错误时退出循环
+                    }
+                }
+                if (URL_delay != -1)
+                {
+                    URL_delay = URL_delay / 3;
+                }
+                if (URL_delay < 2000 && URL_delay != 0)
+                {
+                    WriteLine_color("检测本苗服务器可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
                 }
                 else
                 {
-                    abort(1);
-                    break; // 发生错误时退出循环
+                    WriteLine_color("本苗服务器不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Red);
+                    abort(2);
                 }
             }
-            if (URL_delay != -1)
-            {
-                URL_delay = URL_delay / 3;
-            }
-            if (URL_delay < 2000 && URL_delay != 0)
-            {
-                WriteLine_color("检测本苗服务器可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-            }
-            else
-            {
-                WriteLine_color("本苗服务器不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Red);
-                abort(2);
-            }
-
-            string download_url_BepEx = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
-            string MD5_BepEx = "d42de011d504ea560cbb940318403489";
-            string download_url_Mod_downloadText = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
-            string MD5_url_Mod = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
+            string download_url_BepEx = program.ONLINE_DOWNLOAD_URL_BEPEX;
+            string MD5_BepEx = program.ONLINE_MD5_BEPEX;
+            string download_url_Mod_downloadText = program.ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT;
+            string MD5_url_Mod = program.ONLINE_MD5_URL_MOD;
             string agentURL_Mod = "";
-            URL_delay = 0;
-            WriteLine_color("检查github官网可用性......", ConsoleColor.Blue);
-            for (int i = 0; i < 3; i++)
-            {
-                Thread.Sleep(300);
-                double responseTime = await GetUrlResponseTimeAsync("https://miaoluoyuanlina.github.io");
-                WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                if (responseTime >= 0)
-                {
-                    URL_delay = URL_delay + responseTime;
-                }
-                else
-                {
-                    URL_delay = -1;
-                    break; // 发生错误时退出循环
-                }
-            }
-            if (URL_delay != -1)
-            {
-                URL_delay = URL_delay / 3;
-            }
-            if (URL_delay < 1500 && URL_delay != -1)
-            {
-                WriteLine_color("github官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-            }
-            else
+            if (start_ExportEmbed_BepEx == false)
             {
                 URL_delay = 0;
-                WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
-                WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                agentURL_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=";
-                download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
-                MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
-                
-            }
-
-            URL_delay = 0;
-            WriteLine_color("检查BepEx官网可用性......", ConsoleColor.Blue);
-            for (int i = 0; i < 3; i++)
-            {
-                Thread.Sleep(300);
-                double responseTime = await GetUrlResponseTimeAsync("https://builds.bepinex.dev");
-                WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                if (responseTime >= 0)
+                WriteLine_color("检查github官网可用性......", ConsoleColor.Blue);
+                for (int i = 0; i < 3; i++)
                 {
-                    URL_delay = URL_delay + responseTime;
+                    Thread.Sleep(300);
+                    double responseTime = await GetUrlResponseTimeAsync("https://miaoluoyuanlina.github.io");
+                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
+                    if (responseTime >= 0)
+                    {
+                        URL_delay = URL_delay + responseTime;
+                    }
+                    else
+                    {
+                        URL_delay = -1;
+                        break; // 发生错误时退出循环
+                    }
+                }
+                if (URL_delay != -1)
+                {
+                    URL_delay = URL_delay / 3;
+                }
+                if (URL_delay < 1500 && URL_delay != -1)
+                {
+                    WriteLine_color("github官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
                 }
                 else
                 {
-                    URL_delay = 99999;
-                    break; // 发生错误时退出循环
+                    URL_delay = 0;
+                    WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
+                    WriteLine_color("改用代理Url", ConsoleColor.Yellow);
+                    agentURL_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=";
+                    download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
+                    MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
+
                 }
             }
-            if (URL_delay != -1)
+            if (start_ExportEmbed_Mod == false)
             {
-                URL_delay = URL_delay / 3;
-            }
-            if (URL_delay < 1500 && URL_delay != -1)
-            {
-                WriteLine_color("BepEx官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-            }
-            else
-            {
-                WriteLine_color("BepEx官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
-                WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                download_url_BepEx = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + download_url_BepEx;
+                URL_delay = 0;
+                WriteLine_color("检查BepEx官网可用性......", ConsoleColor.Blue);
+                for (int i = 0; i < 3; i++)
+                {
+                    Thread.Sleep(300);
+                    double responseTime = await GetUrlResponseTimeAsync("https://builds.bepinex.dev");
+                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
+                    if (responseTime >= 0)
+                    {
+                        URL_delay = URL_delay + responseTime;
+                    }
+                    else
+                    {
+                        URL_delay = 99999;
+                        break; // 发生错误时退出循环
+                    }
+                }
+                if (URL_delay != -1)
+                {
+                    URL_delay = URL_delay / 3;
+                }
+                if (URL_delay < 1500 && URL_delay != -1)
+                {
+                    WriteLine_color("BepEx官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
+                }
+                else
+                {
+                    WriteLine_color("BepEx官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
+                    WriteLine_color("改用代理Url", ConsoleColor.Yellow);
+                    download_url_BepEx = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + download_url_BepEx;
+                }
             }
             #endregion
             #region URL获取
             string MD5_Mod = "";
-            for (int i = 0; i < 3; i++)
-            {
-                MD5_Mod = GetUrlTxt(MD5_url_Mod);
-                //Console.WriteLine(MD5_Mod.Contains("发生错误："));
-                if (MD5_Mod.Contains("发生错误：") == false)
-                {
-                    break; 
-                }
-                if (i == 2 )
-                {
-                    WriteLine_color("获取MD5失败", ConsoleColor.Red);
-                    abort(6);
-                }
-            }
-
             string download_url_Mod = "";
-            for (int i = 0; i < 3; i++)
+            if (start_ExportEmbed_Mod == false)
             {
-                download_url_Mod = agentURL_Mod + GetUrlTxt(download_url_Mod_downloadText);
-                download_url_Mod = GetUrlTxt(download_url_Mod_downloadText);
-                //Console.WriteLine(MD5_Mod.Contains("发生错误："));
-                if (download_url_Mod.Contains("发生错误：") == false)
+                for (int i = 0; i < 3; i++)
                 {
-                    break;
+                    MD5_Mod = GetUrlTxt(MD5_url_Mod);
+                    //Console.WriteLine(MD5_Mod.Contains("发生错误："));
+                    if (MD5_Mod.Contains("发生错误：") == false)
+                    {
+                        break;
+                    }
+                    if (i == 2)
+                    {
+                        WriteLine_color("动态获取MD5失败", ConsoleColor.Red);
+                        abort(6);
+                    }
                 }
-                if (i == 2)
+                for (int i = 0; i < 3; i++)
                 {
-                    WriteLine_color("获取Mod下载链接失败！", ConsoleColor.Red);
-                    abort(7);
+                    download_url_Mod = agentURL_Mod + GetUrlTxt(download_url_Mod_downloadText);
+                    download_url_Mod = GetUrlTxt(download_url_Mod_downloadText);
+                    //Console.WriteLine(MD5_Mod.Contains("发生错误："));
+                    if (download_url_Mod.Contains("发生错误：") == false)
+                    {
+                        break;
+                    }
+                    if (i == 2)
+                    {
+                        WriteLine_color("获取Mod下载链接失败！", ConsoleColor.Red);
+                        abort(7);
+                    }
                 }
+                MD5_Mod = RemoveEmptyLines(MD5_Mod);
+                download_url_Mod = RemoveEmptyLines(download_url_Mod);
             }
-            MD5_Mod = RemoveEmptyLines(MD5_Mod);
-            download_url_Mod = RemoveEmptyLines(download_url_Mod);
+            else
+            {
+                MD5_Mod = program.OFFLINE_MOD_MOD5;
+                MD5_Mod = RemoveEmptyLines(MD5_Mod); 
+
+            }
+            if (start_ExportEmbed_BepEx == false) { } else
+            {
+                MD5_BepEx = program.OFFLINE_BPEEX_MOD5;
+                MD5_BepEx = RemoveEmptyLines(MD5_BepEx);
+            }
             WriteLine_color("分配的URL信息", ConsoleColor.Cyan);
             WriteLine_color("download_url_BepEx:" + download_url_BepEx, ConsoleColor.Cyan);
             WriteLine_color("MD5_BepEx:" + MD5_BepEx, ConsoleColor.Cyan);
@@ -862,40 +966,97 @@ namespace installer_Mod
             #endregion
             #endregion
             #region 安装mod
-            DownloadFile(download_url_BepEx, Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//下载BepEx
-            string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
-            WriteLine_color("下载文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
-            if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+            if (start_ExportEmbed_BepEx == false)
             {
-                WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
-            }else
+                DownloadFile(download_url_BepEx, Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//下载BepEx 
+                string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
+                WriteLine_color("下载文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
+                if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+                {
+                    WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
+                }
+                else
+                {
+                    abort(3);
+                    WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
+                }
+            }//BepEx
+            else
             {
-                abort(3);
-                WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
+                CreatePath(Directory.GetCurrentDirectory() + "/Temp");
+                if (ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
+                {
+                    WriteLine_color("BepExMD5导出成功！", ConsoleColor.Blue);
+                }
+                else
+                {
+                    WriteLine_color("BepExMD5导出失败。", ConsoleColor.Red);
+                    abort(11);
+                }
+                string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
+                WriteLine_color("导出文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
+                if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+                {
+                    WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
+                }
+                else
+                {
+                    abort(3);
+                    WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
+                }
             }
             ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip", Gmae_Path);//解压BepEx
             CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");//创建BepEx的Mod文件夹
-            WriteLine_color("正在尝试解析的下载github地址......", ConsoleColor.Blue);
-            string Git_download_url_Mod = GetGitHubDownloadUrl(download_url_Mod);
-            //Console.WriteLine("A "+ download_url_Mod);
-            //Console.WriteLine("B "+ Git_download_url_Mod);
-            if (Git_download_url_Mod == null)
+            if (start_ExportEmbed_Mod == false)
             {
-                abort(8);
-                WriteLine_color("解析GitHub链接失败", ConsoleColor.Red);
-            }
-            WriteLine_color("解析到的下载地址:" + Git_download_url_Mod, ConsoleColor.Blue);
-            DownloadFile(Git_download_url_Mod, Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//下载Mod
-            string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
-            WriteLine_color("下载文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
-            if (string.Equals(MD5_Mod, Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+                WriteLine_color("正在尝试解析的下载github地址......", ConsoleColor.Blue);
+                string Git_download_url_Mod = GetGitHubDownloadUrl(download_url_Mod);
+                //Console.WriteLine("A "+ download_url_Mod);
+                //Console.WriteLine("B "+ Git_download_url_Mod);
+                if (Git_download_url_Mod == null)
+                {
+                    abort(8);
+                    WriteLine_color("解析GitHub链接失败", ConsoleColor.Red);
+                }
+                WriteLine_color("解析到的下载地址:" + Git_download_url_Mod, ConsoleColor.Blue);
+                DownloadFile(Git_download_url_Mod, Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//下载Mod
+                string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
+                WriteLine_color("下载文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
+                if (string.Equals(MD5_Mod, Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+                {
+                    WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
+                }
+                else
+                {
+                    abort(4);
+                    WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
+                }
+            }//MOD
+            else
             {
-                WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
-            }else
-            {
-                abort(4);
-                WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
-            }
+                CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");
+                if (ExportEmbedResources("file.XiaoMiaoICa_AIC_Mod.dll", Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll"))
+                {
+                    Console.WriteLine("MOD导出成功！");
+                }
+                else
+                {
+                    abort(12);
+                    Console.WriteLine("MOD导出失败。");
+                }
+                string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
+                WriteLine_color("导出文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
+                
+                if (string.Equals(RemoveEmptyLines(program.OFFLINE_MOD_MOD5), Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
+                {
+                    WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
+                }
+                else
+                {
+                    abort(4);
+                    WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
+                }
+            } 
             #endregion
             Process.Start(Gmae_Path_incomplete);//启动游戏
             abort(0);//结束程序
