@@ -30,7 +30,7 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "36A885A1E5AB51641588A21530095276";
+        readonly string OFFLINE_MOD_MOD5 = "9b03fb28b70ce54439f17f7179f60a53";
         readonly string OFFLINE_BPEEX_MOD5 = "d42de011d504ea560cbb940318403489";
         readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
         readonly string ONLINE_MD5_BEPEX = "d42de011d504ea560cbb940318403489";
@@ -703,9 +703,9 @@ namespace installer_Mod
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
             if (start_DownloadGame == true)
             {
-                WriteLine_color("目前尝试下载版本:0.27a2", ConsoleColor.Blue);
+                WriteLine_color("目前尝试下载版本:0.27b", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
-                string URL_FILE_NAME = "trPsaFVH_Win_ver027a2.zip";
+                string URL_FILE_NAME = "bE9WbXwv_Win_ver027b.zip";
                 string GAME_V = "027";
                 DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
 
@@ -1036,7 +1036,7 @@ namespace installer_Mod
             else
             {
                 CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");
-                if (ExportEmbedResources("file.XiaoMiaoICa_AIC_Mod.dll", Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll"))
+                if (ExportEmbedResources("file.AliceInCradle_Miao_Mod_Dll.dll", Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll"))
                 {
                     Console.WriteLine("MOD导出成功！");
                 }
