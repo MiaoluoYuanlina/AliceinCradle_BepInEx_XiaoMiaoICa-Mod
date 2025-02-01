@@ -706,6 +706,7 @@ namespace installer_Mod
                 WriteLine_color("目前尝试下载版本:0.27a2", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
                 string URL_FILE_NAME = "trPsaFVH_Win_ver027a2.zip";
+                string GAME_V = "027";
                 DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
 
                 if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME))
@@ -720,7 +721,7 @@ namespace installer_Mod
                 CreatePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
                 WriteLine_color("解压游戏......", ConsoleColor.Blue);
                 ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
-                start_Path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle/Win ver026/AliceInCradle_ver026/AliceInCradle.exe";
+                start_Path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle/Win ver"+ GAME_V + "/AliceInCradle_ver" + GAME_V+ "/AliceInCradle.exe";
                 if (System.IO.File.Exists(start_Path))
                 {
                     WriteLine_color("解压成功！", ConsoleColor.Blue);
