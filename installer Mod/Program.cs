@@ -703,9 +703,10 @@ namespace installer_Mod
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
             if (start_DownloadGame == true)
             {
-                WriteLine_color("目前尝试下载版本:0.27b", ConsoleColor.Blue);
+                WriteLine_color("目前尝试下载版本:0.27f", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
-                string URL_FILE_NAME = "bE9WbXwv_Win_ver027b.zip";
+                //TPwpPnm1_Win ver027f
+                string URL_FILE_NAME = "CN_TPwpPnm1_Win_ver027f.zip";
                 string GAME_V = "027";
                 DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
 
