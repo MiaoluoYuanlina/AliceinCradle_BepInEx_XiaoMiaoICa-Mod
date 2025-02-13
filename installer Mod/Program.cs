@@ -706,9 +706,9 @@ namespace installer_Mod
                 WriteLine_color("目前尝试下载版本:0.27f", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
                 //TPwpPnm1_Win ver027f
-                string URL_FILE_NAME = "CN_TPwpPnm1_Win_ver027f.zip";
+                string URL_FILE_NAME = "CN_gWWWy4n7_Win_ver027g.zip";
                 string GAME_V = "027";
-                DownloadFile("https://minazuki.shiro.dev/d/CN03/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
+                DownloadFile("https://minazuki.shiro.dev/d/CN04/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
 
                 if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME))
                 {
