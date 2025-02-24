@@ -30,7 +30,7 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "9b03fb28b70ce54439f17f7179f60a53";
+        readonly string OFFLINE_MOD_MOD5 = "5c7087d0967643d63838a61d308bebb9";
         readonly string OFFLINE_BPEEX_MOD5 = "d42de011d504ea560cbb940318403489";
         readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
         readonly string ONLINE_MD5_BEPEX = "d42de011d504ea560cbb940318403489";
@@ -547,6 +547,7 @@ namespace installer_Mod
                     if (resourceStream == null)
                     {
                         Console.WriteLine($"嵌入资源未找到：{resourceName}");
+                        Console.WriteLine($"资源加载失败，可用资源列表:\n{string.Join("\n", assembly.GetManifestResourceNames())}");
                         return false;
                     }
 
@@ -566,12 +567,15 @@ namespace installer_Mod
                 return false;
             }
         }
-        static async Task Main(string[] args)//主函数
+
+
+        static async Task Main(string[] args)//主
         {
             #region Text
-            if (true == false)
+            if (false)
             {
-                ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", "G:\\My_file\\C#\\AIC\\Alice in Cradle XiaoMiaoICa of Mod\\installer Mod\\bin\\x64\\Release\\Temp\\111");
+                abort(999);
+
             }
 
             #endregion
@@ -703,12 +707,28 @@ namespace installer_Mod
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
             if (start_DownloadGame == true)
             {
-                WriteLine_color("目前尝试下载版本:0.27f", ConsoleColor.Blue);
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
-                //TPwpPnm1_Win ver027f
-                string URL_FILE_NAME = "CN_gWWWy4n7_Win_ver027g.zip";
+                //CN_HgV1znzi_Win_ver027h
+                string URL_FILE_NAME = "CN_HgV1znzi_Win_ver027h.zip";
                 string GAME_V = "027";
-                DownloadFile("https://minazuki.shiro.dev/d/CN04/AliceInCradle_Latest/"+ URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME);
+                WriteLine_color("目前尝试下载版本:"+ URL_FILE_NAME, ConsoleColor.Blue);
+
+
+                for (int i = 1; i <= 9; i++)
+                {
+                    WriteLine_color("尝试使用官方 CDN0" + i + " 进行下载。", ConsoleColor.Blue);
+                    DownloadFile("https://minazuki.shiro.dev/d/CN0"+ i +"/AliceInCradle_Latest/" + URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/" + URL_FILE_NAME);
+                    FileInfo fileInfo = new FileInfo(Directory.GetCurrentDirectory() + "/Temp/" + URL_FILE_NAME);
+                    WriteLine_color("官方 CDN0" + i + " 不可用。", ConsoleColor.Yellow);
+
+
+                    if (fileInfo.Length >= 1024 * 1024)
+                    {
+                        break;
+                    }
+                }
+
+
 
                 if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME))
                 {
@@ -719,6 +739,8 @@ namespace installer_Mod
                     abort(9);
                     WriteLine_color("下载游戏本体失败！", ConsoleColor.Red);
                 }
+
+
                 CreatePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
                 WriteLine_color("解压游戏......", ConsoleColor.Blue);
                 ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
