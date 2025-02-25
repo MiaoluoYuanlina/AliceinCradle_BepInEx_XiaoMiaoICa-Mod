@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +7,20 @@ using System.Threading.Tasks;
 using System.IO;
 using static System.Net.Mime.MediaTypeNames;
 using System.Diagnostics;
+using System.Reflection;
+using Newtonsoft.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine;
 using HarmonyLib;
+
+
+
+using System.Windows.Forms;
+using System.Threading;
+
+
 
 //游戏dll引用
 using nel; //Assembly-CSharp.dll
@@ -20,7 +29,7 @@ using evt;//unsafeAssem.dll
 
 namespace AIC_XiaoMiaoICa_Mod_DLL
 {
-    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "1.0.0")]
+    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "2.2.1")]
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
         #region 变量
@@ -44,6 +53,8 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
 
         private static bool GUI_Bool_BanMosaic = false; // 开关_禁用马赛克
 
+        private static bool GUI_Bool_NOApplyDamage = false; // 开关_免疫伤害
+
         private static string GUI_TextField_Money = "10000";//金币
 
         private static string GUI_TextField_Time = "1"; //变速齿轮
@@ -59,14 +70,13 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         void Start()//启动
         {
             Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
-            UnityEngine.Debug.Log("Test1");// Unity输出 灰色
-            Logger.LogError("Test2");// 错误 
-            Logger.LogFatal("Test3");//致命 淡红色
-            Logger.LogWarning("Test4");//警告 黄色
-            Logger.LogMessage("Test5");//消息 白色
-            Logger.LogInfo("Test6");//信息 灰色
+            //UnityEngine.Debug.Log("Test1");// Unity输出 灰色
+            //Logger.LogError("Test2");// 错误 
+            //Logger.LogFatal("Test3");//致命 淡红色
+            //Logger.LogWarning("Test4");//警告 黄色
+            //Logger.LogMessage("Test5");//消息 白色
+            //Logger.LogInfo("Test6");//信息 灰色
             //Logger.LogDebug("Test7");//调试
-
 
             //获取PID
             Process currentProcess = Process.GetCurrentProcess();
@@ -85,10 +95,41 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             }
 
             const string Py = "XiaoMiao_ICa";
-
+            
             Logger.LogMessage("#XiaoMiaoICa: Game_PID:" + Game_PID);
             Logger.LogMessage("#XiaoMiaoICa: Game_directory:" + Game_directory);
 
+
+            string[] file =
+            {
+                "Newtonsoft.Json.dll"
+            };
+            // 循环检查每个文件是否存在
+            foreach (var file2 in file)
+            {
+                if (File.Exists(Game_directory+ @"\BepInEx\plugins\" + file2))
+                {
+                    Console.WriteLine($"DLL文件 {file2} 存在。");
+                }
+                else
+                {
+                    Console.WriteLine($"导出DLL {file2} 。");
+                    ExportEmbedResources("AliceInCradle_Miaoo_Mod_Dll.DLL." + file2, Game_directory + @"\BepInEx\plugins\" + file2);
+                    
+                }
+            }
+
+
+            #region 读取配置文件
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic") == "True")
+            {
+                GUI_Bool_BanMosaic = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage") == "True")
+            {
+                GUI_Bool_NOApplyDamage = true;
+            }
+            #endregion
         }
 
         void OnGUI()
@@ -100,7 +141,8 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
 
             }
         }
-        public void WindowsFunc(int id)
+
+        public void WindowsFunc(int id)//控件
         {
             #region 控件
 
@@ -112,6 +154,16 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             #endregion
             
             svPos = GUILayout.BeginScrollView(svPos);// 开始滚动视图
+
+            #region 保存配置
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("保存配置到配置文件"))
+            {
+                SavepreferencesConfig();
+            }
+            GUILayout.Label("将当前配置保存，下次启动自动读取。"); // 文字
+            GUILayout.EndHorizontal();
+            #endregion
 
             #region 快捷键
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
@@ -128,6 +180,15 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             GUILayout.BeginVertical();//竖排
             GUI_Bool_BanMosaic = GUILayout.Toggle(GUI_Bool_BanMosaic, "禁止马赛克生成");
             GUILayout.Label("有的部分是在游戏CG上就已经除了过了，所以不一定全部地方生效。"); // 文字
+            GUILayout.EndHorizontal(); 
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 免疫伤害 ApplyDamage
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            GUILayout.BeginVertical();//竖排
+            GUI_Bool_NOApplyDamage = GUILayout.Toggle(GUI_Bool_NOApplyDamage, "免疫伤害");
+            GUILayout.Label("免疫魔物和环境对你造成伤害"); // 文字
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
             #endregion
@@ -238,13 +299,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             GUILayout.EndHorizontal();
             #endregion
 
-            #region 保存配置
-            //if (GUILayout.Button("保存配置到配置文件"))
-            //{
-            //    SaveConfig();
-            //}
-            #endregion
-
             #region 控件_MID信息
             // 在顶部插空白空间
             GUILayout.Space(50);
@@ -336,7 +390,15 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             GUI.DragWindow();// 允许拖动窗口
             #endregion
         }
-        
+
+        //保存配置
+        public static void SavepreferencesConfig()
+        {
+            string currentDirectory = Directory.GetCurrentDirectory();
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic", GUI_Bool_BanMosaic.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage", GUI_Bool_NOApplyDamage.ToString());
+        }
+
 
         //更改快捷键
         IEnumerator SetCustomKey()
@@ -386,17 +448,14 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         }
 
 
-
-        
-
-        // 监听游戏MosaicShower函数 前置 
+        // 监听游戏MosaicShower函数 前置 用于清除马赛克
         [HarmonyPrefix, HarmonyPatch(typeof(MosaicShower), "FnDrawMosaic")]
         public static bool MosaicShower_FnDrawMosaic_Prefix(MosaicShower __instance)
         {
             XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
             if (GUI_Bool_BanMosaic == true)
             {
-                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - 方法 nel - 类 FnDrawMosaic - 前置 - 返回true");
+                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - nel.MosaicShower_FnDrawMosaic - 前置 - 返回true");
                 return false;
             }
             else
@@ -406,18 +465,113 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             return true;
         }
 
-        // 监听游戏MosaicShower函数 后置
+        // 监听游戏MosaicShower函数 后置 用于清除马赛克
         [HarmonyPostfix, HarmonyPatch(typeof(MosaicShower), "FnDrawMosaic")]
         public static void MosaicShower_FnDrawMosaic_Postfix(MosaicShower __instance, Camera Cam)
         {
             XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
             if (GUI_Bool_BanMosaic == true)
             {
-                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - 方法 nel - 类 FnDrawMosaic - 后置 - 传递:[Cam=" + Cam +"]");
+                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - nel.MosaicShower_FnDrawMosaic - 后置 - 传递:[Cam=" + Cam +"]");
             }
         }
 
 
+        // 监听游戏M2PrADmg函数 前置 用于免疫伤害
+        [HarmonyPrefix, HarmonyPatch(typeof(M2PrADmg), "applyDamage")]
+        public static bool M2PrADmg_applyDamage_Prefix(MosaicShower __instance)
+        {
+            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            if (GUI_Bool_NOApplyDamage == true)
+            {
+                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - nel.M2PrADmg.applyDamage - 前置 - 返回true");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+            return true;
+        }
+
+        // 监听游戏M2PrADmg函数 后置 用于免疫伤害
+        [HarmonyPostfix, HarmonyPatch(typeof(M2PrADmg), "applyDamage")]
+        public static void M2PrADmg_applyDamage_Postfix(MosaicShower __instance, NelAttackInfo Atk, bool force, string fade_key, bool decline_ui_additional_effect, bool from_press_damage)
+        {
+            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            if (GUI_Bool_NOApplyDamage == true)
+            {
+                instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - nel.M2PrADmg.applyDamage - 后置 - 传递:[force=" + force + "]" + "[fade_key=" + fade_key + "]" + "[decline_ui_additional_effect=" + decline_ui_additional_effect + "]" + "[from_press_damage=" + from_press_damage + "]");
+            }
+        }
+
+        // 监听游戏initMagicItem函数 用于用户协议
+        private static bool hasExecuted = false;
+        [HarmonyPrefix, HarmonyPatch(typeof(EV), "evStart")]
+        public static bool EV_evStart_Prefix(MosaicShower __instance)
+        {
+            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+
+            string currentDirectory = Directory.GetCurrentDirectory();
+            string initext = "";
+            try
+            {
+                initext = M_EF.Config_Read(currentDirectory + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
+                
+            }
+            catch
+            {
+                instance_XiaoMiaoICaMod.Logger.LogWarning("读取配置文件出错！");
+            }
+            if (initext == "true")
+            {
+                instance_XiaoMiaoICaMod.Logger.LogMessage("用户同意使用协议");
+                hasExecuted = true;
+                return true;
+            }
+
+            instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - evt.EV.Prefix - 前置 - 返回***");
+            #region 声明
+            if (!hasExecuted)
+            {
+                Thread formThread = new Thread(() =>
+                {
+                    System.Windows.Forms.Application.EnableVisualStyles();
+                    Form_protocol form = new Form_protocol();
+                    System.Windows.Forms.Application.Run(form);
+                });
+
+                // 关键配置
+                formThread.SetApartmentState(ApartmentState.STA);
+                formThread.IsBackground = true;
+                formThread.Start();
+
+                hasExecuted = true;  // 标记为已执行
+            }
+            #endregion
+            
+            return false;
+        }
+
+        // 监听游戏M2PrADmg函数 后置 用于用户协议
+        [HarmonyPostfix, HarmonyPatch(typeof(EV), "evStart")]
+        public static void EV_evStart_Postfix(MosaicShower __instance)
+        {
+            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - evt.EV.Prefix - 后置 - 传递:无");
+
+
+        }
+
+        // 监听游戏 函数 后置 用于
+        //[HarmonyPostfix, HarmonyPatch(typeof(aBtnNel), "ButtonSkin")]
+        public static void aBtnNel_ButtonSkin_Postfix(MosaicShower __instance, string key)
+        {
+            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - nel.aBtnNel.ButtonSkin - 后置 - 传递:[force=" + key + "]");
+
+
+        }
 
         // 监听游戏initMagicItem函数
         [HarmonyPatch(typeof(MDAT), "initMagicItem")]
@@ -429,7 +583,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             }
         }
 
-
         // 监听游戏initMagicItem函数
         [HarmonyPatch(typeof(EV), "initDebugger")]
         public static class EV_initDebugger_Patch
@@ -439,8 +592,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
                 UnityEngine.Debug.Log($"initMagicItem传入函数的变量信息:[init_aimpos_to_d={execute_debugger_initialize}]");
             }
         }
-
-
         //修改金币
         void Mod_Set_Money(int desiredCoinAmount)
         {
@@ -463,6 +614,124 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             }
         }
 
+        /// <summary>
+        /// 导出切入资源
+        /// </summary>
+        /// <param name="FileName"></param>
+        /// <param name="Path"></param>
+        /// <returns></returns>
+        public static bool ExportEmbedResources(string FileName, string Path) // 导出嵌入资源
+        {
+            try
+            {
+                // 获取当前程序集
+                Assembly assembly = Assembly.GetExecutingAssembly();
+
+                // 构造嵌入资源的完整名称
+                string resourceName = $"{FileName}";
+
+                // 检查资源是否存在
+                using (Stream resourceStream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (resourceStream == null)
+                    {
+                        Console.WriteLine($"嵌入资源未找到：{resourceName}");
+                        Console.WriteLine($"资源加载失败，可用资源列表:\n{string.Join("\n", assembly.GetManifestResourceNames())}");
+                        return false;
+                    }
+
+                    // 将嵌入的资源导出到文件系统
+                    using (FileStream fileStream = new FileStream(Path, FileMode.Create, FileAccess.Write))
+                    {
+                        resourceStream.CopyTo(fileStream);
+                    }
+
+                    Console.WriteLine($"资源已成功导出到: {Path}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"导出失败: {ex.Message}");
+                return false;
+            }
+        }
+    }
+    public static class M_EF    //Extended functionality
+    {
+        /// <summary>
+        /// 写入配置文件
+        /// </summary>
+        /// <param name="filePath">配置文件路径</param>
+        /// <param name="configName">配置项名称</param>
+        /// <param name="content">配置内容</param>
+        /// <returns>操作是否成功</returns>
+        public static bool Config_Write(string filePath, string configName, string content)
+        {
+            
+            
+            try
+            {
+                Dictionary<string, string> configDict;
+
+                // 创建目录（如果不存在）
+                string directory = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(directory) && !string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                // 读取现有配置
+                if (File.Exists(filePath))
+                {
+                    string existingJson = File.ReadAllText(filePath);
+                    configDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(existingJson)
+                               ?? new Dictionary<string, string>();
+                }
+                else
+                {
+                    configDict = new Dictionary<string, string>();
+                }
+
+                // 更新配置项
+                configDict[configName] = content;
+
+                // 写入文件
+                string newJson = JsonConvert.SerializeObject(configDict, Formatting.Indented);
+                File.WriteAllText(filePath, newJson);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 读取配置文件
+        /// </summary>
+        /// <param name="filePath">配置文件路径</param>
+        /// <param name="configName">配置项名称</param>
+        /// <returns>配置内容（失败返回null）</returns>
+        public static string Config_Read(string filePath, string configName)
+        {
+            try
+            {
+                if (!File.Exists(filePath)) return null;
+
+                string json = File.ReadAllText(filePath);
+                Dictionary<string, string> configDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+
+                return configDict != null && configDict.TryGetValue(configName, out string value)
+                       ? value
+                       : null;
+            }
+            catch
+            {
+                return null;
+            }
+
+        }
 
     }
 }
