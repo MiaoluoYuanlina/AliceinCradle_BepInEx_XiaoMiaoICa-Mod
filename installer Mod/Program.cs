@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +20,6 @@ using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
-
 
 
 
@@ -108,8 +107,8 @@ namespace installer_Mod
                 }
                 else if (return_int == 13)
                 {
-                    WriteLine_color("未知错误!", ConsoleColor.Red);
-                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    WriteLine_color("下载游戏失败！", ConsoleColor.Red);
+                    MessageBox.Show("可能是由于官方更新了新版本，而脚本还没更新。\n请尝试自行下载游戏本体，或者等待更新！\n游戏官网 https://cn.aliceincradle.dev", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 else if (return_int == 14)
                 {
@@ -587,6 +586,7 @@ namespace installer_Mod
             string start_Path = "";
             bool start_ExportEmbed_Mod = false;
             bool start_ExportEmbed_BepEx = false;
+            string DownloadGameFileName = "CN_HgV1znzi_Win_ver027h.zip";
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--Path")//路径
@@ -606,6 +606,11 @@ namespace installer_Mod
                 {
                     start_ExportEmbed_BepEx = true;
 
+                } 
+                else if (args[i] == "--DownloadGameFileName")
+                {
+                    DownloadGameFileName = args[i + 1];
+                    i++;
                 }
             }
             #endregion
@@ -709,7 +714,7 @@ namespace installer_Mod
             {
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
                 //CN_HgV1znzi_Win_ver027h
-                string URL_FILE_NAME = "CN_HgV1znzi_Win_ver027h.zip";
+                string URL_FILE_NAME = DownloadGameFileName;
                 string GAME_V = "027";
                 WriteLine_color("目前尝试下载版本:"+ URL_FILE_NAME, ConsoleColor.Blue);
 
@@ -726,7 +731,18 @@ namespace installer_Mod
                     {
                         break;
                     }
+
+                    string fileContent = System.IO.File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Temp", URL_FILE_NAME));
+                    WriteLine_color("URL返回内容：", ConsoleColor.Yellow);
+                    WriteLine_color(fileContent, ConsoleColor.Yellow);
+
+                    if (i == 9)
+                    {
+                        abort(13);//无可用的 CDN 
+                    }
                 }
+
+                
 
 
 
