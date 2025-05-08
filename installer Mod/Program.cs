@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,7 +29,7 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "5c7087d0967643d63838a61d308bebb9";
+        readonly string OFFLINE_MOD_MOD5 = "b8ce560c83a5aefdc00d6e2ca35ee763";
         readonly string OFFLINE_BPEEX_MOD5 = "d42de011d504ea560cbb940318403489";
         readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
         readonly string ONLINE_MD5_BEPEX = "d42de011d504ea560cbb940318403489";
@@ -612,6 +612,7 @@ namespace installer_Mod
                     DownloadGameFileName = args[i + 1];
                     i++;
                 }
+
             }
             #endregion
             #region 声明
