@@ -11,3 +11,6 @@ powershell.exe "irm https://api.xiaomiao-ica.top/AIC | iex"
 Mod信息  
 [![GitHub Mod 源代码](https://img.shields.io/badge/github-Mod源代码-fffbff?logo=GitHub)](https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod)
 [![GitHub Mod 源代码](https://img.shields.io/badge/gitee-Mod源代码-d90013?logo=Gitee)](https://gitee.com/wu-suowei_xiaomiao/AliceinCradle_BepInEx_XiaoMiaoICa-Mod)
+
+公开全部玩家运行日志
+https://api.xiaomiao-ica.top/AIC/log/log.php
