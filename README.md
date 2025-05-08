@@ -14,3 +14,6 @@ Mod信息
 
 公开全部玩家运行日志
 https://api.xiaomiao-ica.top/AIC/log/log.php
+
+官网
+https://xiaomiao-ica.top/2024/12/01/alice-in-cradle-bepinex-mod/
