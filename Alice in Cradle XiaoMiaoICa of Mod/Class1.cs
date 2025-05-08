@@ -40,9 +40,16 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         string Game_directory = null;
         int Game_PID = 0;
 
+        //用户协议
+        private bool utilization_agreement = false; // 用户协议是否同意
+
+        //UI_用户协议   
+        private Rect WindowsRect_utilization_agreement = new Rect(100, 100, 400, 400); // 主窗口
+        private bool WindowsRect_utilization_agreement_showWindow = false; // 控制窗口显示/隐藏的标志
+
         //UI
         private Rect WindowsRect = new Rect(50, 50, 500, 400); // 主窗口
-        private bool showWindow = true; // 控制窗口显示/隐藏的标志
+        private bool showWindow = false; // 控制窗口显示/隐藏的标志
         private KeyCode toggleKey = KeyCode.Tab; // 用户定义的快捷键
 
         private string GUI_Textstring = ""; // 输入框
@@ -65,8 +72,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         private Vector2 svPos; // 界面滑动条
 
         #endregion
-
-
         void Start()//启动
         {
             Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
@@ -110,16 +115,43 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
                 if (File.Exists(Game_directory+ @"\BepInEx\plugins\" + file2))
                 {
                     Console.WriteLine($"DLL文件 {file2} 存在。");
-                }
+                }   
                 else
                 {
                     Console.WriteLine($"导出DLL {file2} 。");
-                    ExportEmbedResources("AliceInCradle_Miaoo_Mod_Dll.DLL." + file2, Game_directory + @"\BepInEx\plugins\" + file2);
+                    ExportEmbedResources("Alice_in_Cradle_XiaoMiaoICa_of_Mod.DLL." + file2, Game_directory + @"\BepInEx\plugins\" + file2);
                     
                 }
             }
 
+            string initext = "";
+            try
+            {
+                initext = M_EF.Config_Read(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
 
+            }
+            catch
+            {
+                Logger.LogWarning("读取配置文件出错！");
+            }
+            if (initext == "true")
+            {
+                Logger.LogMessage("用户同意使用协议");
+                utilization_agreement = true;
+            }
+            else
+            {
+                Logger.LogWarning("用户未同意使用协议");
+                utilization_agreement = false;
+            }
+            if (utilization_agreement == true)
+            {
+                showWindow = true;
+            }
+            else
+            {
+                WindowsRect_utilization_agreement_showWindow = true;
+            }
             #region 读取配置文件
             if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic") == "True")
             {
@@ -137,9 +169,75 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             if (showWindow)
             {
                 WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
-
-
+                
             }
+            if (WindowsRect_utilization_agreement_showWindow)
+            {
+                WindowsRect_utilization_agreement = GUILayout.Window(0720, WindowsRect_utilization_agreement, WindowsFunc_utilization_agreement, "苗萝缘莉雫:《Alice in Cradle》第三方Mod使用协议");
+            }
+        }
+
+        public void WindowsFunc_utilization_agreement(int id)//控件_用户协议
+        {
+
+            if (utilization_agreement == true)
+            {
+                M_EF.Config_Write(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement", "true");
+                showWindow = true; // 显示主窗口
+                WindowsRect_utilization_agreement_showWindow = false; // 关闭窗口
+            }
+
+            //WindowsRect_utilization_agreement = new Rect(50, 50, 700, 500);
+
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            Color redColor = new Color32(0, 0, 0, 0);
+
+            redColor = new Color32(255, 153, 51, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("原始游戏:指《Alice in Cradle》原始游戏文件。\nMOD:指XiaoMiao_ICa开发的非官方开源衍生作品。", style);
+
+
+            redColor = new Color32(255, 0, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("禁止将本Mod用于商业用途，或者修改后用于商业用途。\n", style); // 文字
+
+            redColor = new Color32(255, 255, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("Mod由第三方非官方开发者开发！与原始游戏官方无关联，请不要将mod引起的游戏崩溃日志提供给官方，因为官方不会为mod提供支持！\n", style);
+
+
+            // 在顶部插空白空间
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("同意协议")) // 按钮
+            {
+                utilization_agreement = true; // 用户协议同意
+            }
+            if (GUILayout.Button("拒绝协议")) // 按钮
+            {
+                Process.Start("powershell.exe", "-command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('如果不同意使用协议，请立刻卸载Mod！', '欧尼酱~你拒绝了用户协议呢~', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)\"");
+                Process.GetCurrentProcess().Kill();
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+
+
+            //if (GUILayout.Button("Text")) // 按钮
+            //{
+            //}
+
+
+
+
+            
         }
 
         public void WindowsFunc(int id)//控件
@@ -363,6 +461,11 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
             {
                 Process.GetCurrentProcess().Kill();
             }
+            //if (GUILayout.Button("重启游戏")) // 按钮
+            //{
+            //    Process.Start(Game_directory + "/AliceInCradle.exe", "");
+            //    Process.GetCurrentProcess().Kill();
+            //}
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
 
@@ -387,7 +490,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
 
             GUILayout.Space(50);// 在顶部插空白空间
             GUILayout.EndScrollView();// 结束滚动视图
-            GUI.DragWindow();// 允许拖动窗口
+            GUI.DragWindow();// 允许拖动窗口  
             #endregion
         }
 
@@ -506,51 +609,33 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         }
 
         // 监听游戏initMagicItem函数 用于用户协议
-        private static bool hasExecuted = false;
+
         [HarmonyPrefix, HarmonyPatch(typeof(EV), "evStart")]
         public static bool EV_evStart_Prefix(MosaicShower __instance)
         {
-            XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            //return true;
+            // Create an instance of XiaoMiaoICaMod to access the non-static field
+            //XiaoMiaoICaMod instance_XiaoMiaoICaMod = new XiaoMiaoICaMod();
+            //instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - evt.EV.Prefix - 前置 - 返回***");
 
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string initext = "";
-            try
-            {
-                initext = M_EF.Config_Read(currentDirectory + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
-                
-            }
-            catch
-            {
-                instance_XiaoMiaoICaMod.Logger.LogWarning("读取配置文件出错！");
-            }
-            if (initext == "true")
-            {
-                instance_XiaoMiaoICaMod.Logger.LogMessage("用户同意使用协议");
-                hasExecuted = true;
-                return true;
-            }
+            //instance_XiaoMiaoICaMod.utilization_agreement = true;
+            //instance_XiaoMiaoICaMod.Logger.LogMessage("用户协议" + instance_XiaoMiaoICaMod.utilization_agreement);
+            //if (instance_XiaoMiaoICaMod.utilization_agreement)
+            //{
 
-            instance_XiaoMiaoICaMod.Logger.LogInfo("DLL Assembly-CSharp.dll - evt.EV.Prefix - 前置 - 返回***");
-            #region 声明
-            if (!hasExecuted)
-            {
-                Thread formThread = new Thread(() =>
-                {
-                    System.Windows.Forms.Application.EnableVisualStyles();
-                    Form_protocol form = new Form_protocol();
-                    System.Windows.Forms.Application.Run(form);
-                });
+            //    instance_XiaoMiaoICaMod.showWindow = false; // 显示主窗口
+            //    instance_XiaoMiaoICaMod.WindowsRect_utilization_agreement_showWindow = true; // 关闭窗口
+            //    return true;
+            //}
+            //else
+            //{
+            //    instance_XiaoMiaoICaMod.showWindow = true; // 显示主窗口
+            //    instance_XiaoMiaoICaMod.WindowsRect_utilization_agreement_showWindow = false; // 关闭窗口
+            //    return false;
+            //}
 
-                // 关键配置
-                formThread.SetApartmentState(ApartmentState.STA);
-                formThread.IsBackground = true;
-                formThread.Start();
 
-                hasExecuted = true;  // 标记为已执行
-            }
-            #endregion
-            
-            return false;
+            return true;
         }
 
         // 监听游戏M2PrADmg函数 后置 用于用户协议

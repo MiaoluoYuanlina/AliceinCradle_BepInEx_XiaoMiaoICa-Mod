@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\AliceInCradle_ver025f\BepInEx\plugins\XiaoMiao_ICa\</OutputPath>
+    <OutputPath>..\AliceInCradle\BepInEx\plugins\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>0</WarningLevel>
@@ -35,20 +35,23 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\AliceInCradle_ver025f\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>..\AliceInCradle\BepInEx\core\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx.Core">
-      <HintPath>..\..\AliceInCradle_ver025f\BepInEx\core\BepInEx.Core.dll</HintPath>
+      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx.Unity">
-      <HintPath>..\..\AliceInCradle_ver025f\BepInEx\core\BepInEx.Unity.dll</HintPath>
+      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Unity.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Private>False</Private>
@@ -78,27 +81,27 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.HotReloadModule">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\UnityEngine.HotReloadModule.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.HotReloadModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="unsafeAssem">
-      <HintPath>..\..\AliceInCradle_ver025f\AliceInCradle_Data\Managed\unsafeAssem.dll</HintPath>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\unsafeAssem.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -111,8 +114,13 @@
     <EmbeddedResource Include="powershell\reopen_1.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Data\Newtonsoft.Json.dll" />
     <Content Include="Data\UnityExplorer.BIE6.Mono.dll" />
     <Content Include="Data\UniverseLib.Mono.dll" />
+    <EmbeddedResource Include="DLL\Newtonsoft.Json.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
