@@ -13,7 +13,7 @@ Mod信息
 [![GitHub Mod 源代码](https://img.shields.io/badge/gitee-Mod源代码-d90013?logo=Gitee)](https://gitee.com/wu-suowei_xiaomiao/AliceinCradle_BepInEx_XiaoMiaoICa-Mod)
 
 公开全部玩家运行日志
-https://api.xiaomiao-ica.top/AIC/log/log.php
+https://api.xiaomiaoica.wiki/AIC/log/log.php
 
 官网
-https://xiaomiao-ica.top/2024/12/01/alice-in-cradle-bepinex-mod/
+https://xiaomiaoica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/
