@@ -1,3 +1,6 @@
+##因为个人工作原因，很少有时间维护项目，只能暂时停止更新。
+
+
 # Alice in Cradle XiaoMiaoICa of Mod
 本 Mod 基于 BepInEx 制作。
 
