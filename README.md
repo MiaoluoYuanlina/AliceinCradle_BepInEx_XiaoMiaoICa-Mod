@@ -8,7 +8,7 @@
 
 ```
 #需要自己准备游戏本体！
-powershell.exe "irm https://api.ica.top/AIC | iex"
+powershell.exe "irm https://api.ica.wiki/AIC | iex"
 ```
 
 Mod信息  
