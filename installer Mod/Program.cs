@@ -29,22 +29,26 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "b8ce560c83a5aefdc00d6e2ca35ee763";
-        readonly string OFFLINE_BPEEX_MOD5 = "d42de011d504ea560cbb940318403489";
-        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/571/BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip";
-        readonly string ONLINE_MD5_BEPEX = "d42de011d504ea560cbb940318403489";
+        readonly string OFFLINE_MOD_MOD5 = "98ded9ccf6623d1c8a7e1dea79ad2c1c";
+        readonly string OFFLINE_BPEEX_MOD5 = "2afe8b0fe5ecdf43c772ebe90762a5dd";
+        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/752/BepInEx-Unity.Mono-win-x64-6.0.0-be.752%2Bdd0655f.zip";
+        readonly string ONLINE_MD5_BEPEX = "2afe8b0fe5ecdf43c772ebe90762a5dd";
         readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
         readonly string ONLINE_MD5_URL_MOD = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
+
+        private static readonly HttpClient client = new HttpClient();
+        private static readonly string _baseUrl = "https://api.ica.wiki/AIC/log2/index.php";
         #endregion
 
-        static string LOG_save = "";//日志
+
+
+
+        static int LOG_ID = -1;//日志
         static bool abort(int return_int)//结束程序
         {
             DeletePath(Directory.GetCurrentDirectory() + "/Temp");//删除Temp文件夹
-            string LogID = "-1";
             if (return_int != 0)
             {
-                LogID = GetUrlTxt("https://api.xiaomiao-ica.top/AIC/log/exe/ID_error/?gain=");
                 if (return_int == 1)
                 {
                     MessageBox.Show("无法链接至主要服务器!\n你可以尝试更改DNS服务器在尝试运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -122,21 +126,19 @@ namespace installer_Mod
                 }
                 if (MessageBox.Show("你在运行本程序时出现了问题!\n你可以尝试联系本苗!本苗会帮助你解决一些问题~\n记得带上你的终端截图!要不从雨来了也帮不了你啦~\n\n是否要联系本苗?", "欧尼酱~你想要帮助吗?", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
-                    Process.Start(new ProcessStartInfo("https://xiaomiao-ica.top") { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo("https://xiaomiao.ica.wiki") { UseShellExecute = true });
                 }
 
             }
             else
             {
-                LogID = GetUrlTxt("https://api.xiaomiao-ica.top/AIC/log/exe/ID_normalcy/?gain=");
+
             }
-            Thread.Sleep(100);
-            WriteLine_color("你的本次运行被分配了ID:"+LogID, ConsoleColor.Blue);
-            SendDataToServer(LOG_save, return_int.ToString());
-            Thread.Sleep(1000);
-            //WriteLine_color("运行结束！点击任意键结束程序!", ConsoleColor.Green);
-            //Console.ReadKey();//等待点击
+            WriteLine_color("运行结束！", ConsoleColor.Green);
+
+            Thread.Sleep(10000);
             Environment.Exit(return_int);
+            WriteLine_color("自动退出！", ConsoleColor.Green);
             return true;
         }
         static int Name_Get_PID(string processName) // 获取进程的PID
@@ -249,10 +251,16 @@ namespace installer_Mod
         }
         static int WriteLine_color(string text , ConsoleColor color)//输出带颜色的文字
         {
-            LOG_save = LOG_save + text + "\n";
+
             Console.ForegroundColor = color;
             Console.WriteLine(text);
             Console.ResetColor();
+            if (LOG_ID != -1)
+            {
+                LOG_SubmitTextAsync(LOG_ID.ToString(), text);
+            }
+                
+
             return 0;
         }
         static string GetUrlTxt(string url)//获取文本文件内容
@@ -428,46 +436,6 @@ namespace installer_Mod
             // 使用正则表达式进行匹配
             return Regex.IsMatch(input, pattern);
         }
-        static async Task SendDataToServer(string text, string data) // 发送数据到服务器
-        {
-            Console.WriteLine($"尝试上传日志...");
-            string url = "https://api.xiaomiao-ica.top/AIC/log/index.php";  // PHP文件URL
-
-            // 构造POST请求的数据
-            var payload = new Dictionary<string, string>
-            {
-                { "text", text },
-                { "data", data }
-            };
-
-            using (var client = new HttpClient())
-            {
-                try
-                {
-                    // 设置 HttpClient 的配置，忽略 SSL 证书验证
-                    client.DefaultRequestHeaders.Add("User-Agent", "C# App");
-
-                    // 发送 POST 请求
-                    var content = new FormUrlEncodedContent(payload);
-                    var response = await client.PostAsync(url, content);
-
-                    // 确保响应成功
-                    response.EnsureSuccessStatusCode();
-
-                    // 获取响应内容
-                    string responseText = await response.Content.ReadAsStringAsync();
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine(responseText);  // 输出服务器响应内容
-                    Console.ResetColor();
-                }
-                catch (Exception e)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"请求出错: {e.Message}");
-                    Console.ResetColor();
-                }
-            }
-        }
         static int GetStringWidth(string str)// 计算字符串的宽度
         {
             int width = 0;
@@ -566,8 +534,120 @@ namespace installer_Mod
                 return false;
             }
         }
+        static int LOG_GetNewIdAsync()//申请新的日志ID
+        {
+            try
+            {
+                return Task.Run(async () =>
+                {
+                    string url = $"{_baseUrl}?action=get_id";
+                    string response = await client.GetStringAsync(url);
+                    dynamic result = JsonConvert.DeserializeObject<dynamic>(response);
 
+                    if (result.status == "success")
+                    {
+                        return int.Parse((string)result.id);
+                    }
+                    else
+                    {
+                        throw new Exception($"申请 ID 失败: {result.message}");
+                    }
+                }).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                return -1; 
+            }
+        }
+        static async Task<bool> LOG_SubmitTextAsync(string id, string text)//提交日志文本
+        {
+            const int maxRetries = 3;
+            const int timeoutSeconds = 10;
 
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)))
+                {
+                    try
+                    {
+                        string url = $"{_baseUrl}?action=submit";
+
+                        var values = new Dictionary<string, string>
+                {
+                    { "id", id },
+                    { "text", text }
+                };
+
+                        using (var content = new FormUrlEncodedContent(values))
+                        {
+                            HttpResponseMessage response =
+                                await client.PostAsync(url, content, cts.Token);
+
+                            string responseString =
+                                await response.Content.ReadAsStringAsync();
+
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                Console.WriteLine(
+                                    $"第 {attempt} 次尝试 - HTTP {(int)response.StatusCode} 错误，ID: {id}"
+                                );
+                                continue;
+                            }
+
+                            dynamic result;
+                            try
+                            {
+                                result = JsonConvert.DeserializeObject<dynamic>(responseString);
+                            }
+                            catch
+                            {
+                                Console.WriteLine(
+                                    $"第 {attempt} 次尝试 - JSON 解析失败，ID: {id}"
+                                );
+                                continue;
+                            }
+
+                            string status = result?.status?.ToString();
+                            string message = result?.message?.ToString() ?? "未知错误";
+
+                            if (status == "success")
+                                return true;
+
+                            Console.WriteLine(
+                                $"第 {attempt} 次尝试 - 业务失败: {message}, ID: {id}"
+                            );
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        Console.WriteLine(
+                            $"第 {attempt} 次尝试 - 请求超时（>{timeoutSeconds}s），ID: {id}"
+                        );
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        Console.WriteLine(
+                            $"第 {attempt} 次尝试 - 网络错误: {ex.Message}, ID: {id}"
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(
+                            $"第 {attempt} 次尝试 - 未知异常: {ex.Message}, ID: {id}"
+                        );
+                    }
+
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(200 * attempt);
+                    }
+                }
+            }
+
+            Console.WriteLine($"LOG 提交失败（重试 {maxRetries} 次），ID: {id}");
+            return false;
+        }
         static async Task Main(string[] args)//主
         {
             #region Text
@@ -633,7 +713,7 @@ namespace installer_Mod
             "Mod及游戏本体都是免费的，如果你是购买而来，证明你被骗啦~",
             "本程序会收集你的日志来更好的维护，如果您不同意，请立即关闭此程序。",
             "",
-            "MOD官网：https://xiaomiao-ica.top/2024/12/01/alice-in-cradle-bepinex-mod/",
+            "MOD官网：https://xiaomiaoica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/",
             "GitHub项目:https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod",
             "原游戏官网:https://aliceincradle.com/",
             "",//20
@@ -711,6 +791,8 @@ namespace installer_Mod
             #region 下载游戏
             WriteLine_color("\n程序运行目录" + Directory.GetCurrentDirectory(), ConsoleColor.Cyan);//显示程序运行目录
             CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
+            LOG_ID = LOG_GetNewIdAsync();
+            WriteLine_color("\n本次运行分配了ID" + LOG_ID, ConsoleColor.Cyan);
             if (start_DownloadGame == true)
             {
                 WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
@@ -847,7 +929,7 @@ namespace installer_Mod
                 for (int i = 0; i < 3; i++)
                 {
                     Thread.Sleep(300);
-                    double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiao-ica.top");
+                    double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiaoica.wiki");
                     WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
                     if (responseTime >= 0)
                     {
@@ -863,7 +945,7 @@ namespace installer_Mod
                 {
                     URL_delay = URL_delay / 3;
                 }
-                if (URL_delay < 2000 && URL_delay != 0)
+                if (URL_delay < 8000 && URL_delay != 0)
                 {
                     WriteLine_color("检测本苗服务器可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
                 }
@@ -901,7 +983,7 @@ namespace installer_Mod
                 {
                     URL_delay = URL_delay / 3;
                 }
-                if (URL_delay < 1500 && URL_delay != -1)
+                if (URL_delay < 5000 && URL_delay != -1)
                 {
                     WriteLine_color("github官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
                 }
@@ -910,7 +992,7 @@ namespace installer_Mod
                     URL_delay = 0;
                     WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
                     WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    agentURL_Mod = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=";
+                    agentURL_Mod = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=";
                     download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
                     MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
 
@@ -939,7 +1021,7 @@ namespace installer_Mod
                 {
                     URL_delay = URL_delay / 3;
                 }
-                if (URL_delay < 1500 && URL_delay != -1)
+                if (URL_delay < 5000 && URL_delay != -1)
                 {
                     WriteLine_color("BepEx官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
                 }
@@ -947,7 +1029,7 @@ namespace installer_Mod
                 {
                     WriteLine_color("BepEx官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
                     WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    download_url_BepEx = "https://api.xiaomiao-ica.top/agent/index.php?fileUrl=" + download_url_BepEx;
+                    download_url_BepEx = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=" + download_url_BepEx;
                 }
             }
             #endregion
@@ -1025,7 +1107,7 @@ namespace installer_Mod
             else
             {
                 CreatePath(Directory.GetCurrentDirectory() + "/Temp");
-                if (ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
+                if (ExportEmbedResources("file.BepInEx-Unity.Mono-win-x64-6.0.0-be.752+dd0655f.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
                 {
                     WriteLine_color("BepExMD5导出成功！", ConsoleColor.Blue);
                 }
@@ -1100,6 +1182,7 @@ namespace installer_Mod
             } 
             #endregion
             Process.Start(Gmae_Path_incomplete);//启动游戏
+            Thread.Sleep(10000);
             abort(0);//结束程序
         }
     }
