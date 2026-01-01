@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,8 +29,8 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "98ded9ccf6623d1c8a7e1dea79ad2c1c";
-        readonly string OFFLINE_BPEEX_MOD5 = "2afe8b0fe5ecdf43c772ebe90762a5dd";
+        readonly string OFFLINE_MOD_MOD5 = "4718959462136daa01c5315c254ad409";
+        readonly string OFFLINE_BPEEX_MOD5 = "f34c5c5df840f0e8667da9dd85bf9e15";
         readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/752/BepInEx-Unity.Mono-win-x64-6.0.0-be.752%2Bdd0655f.zip";
         readonly string ONLINE_MD5_BEPEX = "2afe8b0fe5ecdf43c772ebe90762a5dd";
         readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
