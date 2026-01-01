@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>0</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -34,6 +35,24 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Class1.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="powershell\reopen_0.ps1" />
+    <EmbeddedResource Include="powershell\reopen_1.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\ExportedAssets\key_noel.png" />
+    <EmbeddedResource Include="Data\ExportedAssets\title_logo.png" />
+    <EmbeddedResource Include="Data\ExportedAssets\__events_restroom.pxls.bytes.texture_0.png" />
+    <EmbeddedResource Include="Data\ExportedAssets\__events_2weekattack.pxls.bytes.texture_0.png" />
+    <Content Include="Data\Newtonsoft.Json.dll" />
+    <Content Include="Data\UnityExplorer.BIE6.Mono.dll" />
+    <Content Include="Data\UniverseLib.Mono.dll" />
+    <EmbeddedResource Include="DLL\Newtonsoft.Json.dll" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>..\AliceInCradle\BepInEx\core\0Harmony.dll</HintPath>
       <Private>False</Private>
@@ -46,42 +65,38 @@
       <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="BepInEx.Unity">
-      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Unity.dll</HintPath>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Unity.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="BepInEx.Unity.Mono">
+      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Unity.Mono.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Mono.Preloader">
+      <HintPath>..\AliceInCradle\BepInEx\core\BepInEx.Unity.Mono.Preloader.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Core">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Windows.Forms">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xml.Linq">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Data.DataSetExtensions">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CSharp">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Data">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net.Http">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xml">
-      <Private>False</Private>
-    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
       <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
@@ -92,6 +107,11 @@
       <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.HotReloadModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
@@ -100,24 +120,15 @@
       <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="unsafeAssem">
       <HintPath>..\AliceInCradle\AliceInCradle_Data\Managed\unsafeAssem.dll</HintPath>
       <Private>False</Private>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Class1.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="powershell\reopen_0.ps1" />
-    <EmbeddedResource Include="powershell\reopen_1.ps1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Data\Newtonsoft.Json.dll" />
-    <Content Include="Data\UnityExplorer.BIE6.Mono.dll" />
-    <Content Include="Data\UniverseLib.Mono.dll" />
-    <EmbeddedResource Include="DLL\Newtonsoft.Json.dll" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
