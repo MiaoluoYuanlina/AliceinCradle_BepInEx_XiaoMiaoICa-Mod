@@ -22,8 +22,6 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 
 
-
-
 namespace installer_Mod
 {
     internal class Program
@@ -1187,3 +1185,4 @@ namespace installer_Mod
         }
     }
 }
+
