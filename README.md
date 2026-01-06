@@ -2,7 +2,7 @@
 
 
 # Alice in Cradle XiaoMiaoICa of Mod
-本 Mod 基于 BepInEx 制作。
+本 Mod 基于 BepeInEx 制作。
 
 使用 Windows PowerShell 一键安装 脚本
 
