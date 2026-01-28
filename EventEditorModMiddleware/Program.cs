@@ -1,6 +1,8 @@
 ﻿using Microsoft.Playwright;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Remoting.Channels;
@@ -13,7 +15,7 @@ class EventEditorModMiddleware
     {
         static void Main(string[] args)
         {
-            Start("chrome");
+            Start("chrome", "https://api.ica.wiki/AIC/EventEditor/");
             new Program().Receive("MiaoAicMod_EventEditor");
         }
         public class RequestDto
@@ -95,8 +97,7 @@ class EventEditorModMiddleware
                     {
                         Task.Run(() =>
                         {
-                            Console.WriteLine("启动浏览器：" + Json.Objective);
-                            Start(Json.Objective);
+                            Start(Json.Objective,Json.EditorUrl);
                         });
                     }
 
@@ -106,7 +107,6 @@ class EventEditorModMiddleware
                         Message = "处理完成"
                     };
 
-                    // ★ 写回时也要防断
                     if (server.IsConnected)
                     {
                         writer.WriteLine(System.Text.Json.JsonSerializer.Serialize(resp));
@@ -114,7 +114,6 @@ class EventEditorModMiddleware
                 }
                 catch (IOException)
                 {
-                    // ★ 管道断开 = 正常情况
                     Console.WriteLine("管道已断开，等待下一个连接");
                 }
                 catch (Exception ex)
@@ -130,14 +129,16 @@ class EventEditorModMiddleware
             }
         }
 
-        static void Start(string Channel)
+        static void Start(string Channel, string EditorUrl)
         {
             using (var playwright = Playwright.CreateAsync().Result)
             {
+                Console.WriteLine("正在启动浏览器：" + Channel);
                 var browser = playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
                 {
                     Headless = false,
-                    Channel = Channel
+                    Channel = Channel,
+                    SlowMo = 50,   
                 }).Result;
 
                 var page = browser.NewPageAsync().Result;
@@ -201,17 +202,61 @@ class EventEditorModMiddleware
                             var result = await page.EvaluateAsync<dynamic>(@"
 () => {
     const ws = Blockly.getMainWorkspace();
-    if (!ws) return null;
+    if (!ws) return []; 
+    
     const blocks = ws.getAllBlocks(false);
-    return blocks.map(b => ({
-        type: b.type,
-        id: b.id
-    }));
+    return blocks.map(b => {
+        const fieldsData = {};
+        if (b.inputList) {
+            b.inputList.forEach(input => {
+                if (input.fieldRow) {
+                    input.fieldRow.forEach(field => {
+                        if (field.name) {
+                            fieldsData[field.name] = field.getValue(); 
+                        }
+                    });
+                }
+            });
+        }
+        return {
+            type: b.type,
+            id: b.id,
+            values: fieldsData 
+        };
+    });
 }
 ");
 
-                            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+                            var blockList = (IEnumerable<dynamic>)result;
 
+                            foreach (var block in blockList)
+                            {
+                                // 判断是否是入口块
+                                if (block.type == "entrance")
+                                {
+                                    // 访问 values 下的 String_0 和 Bool_0
+                                    string eventId = block.values.String_0;
+                                    string isExportRaw = block.values.Bool_0; // 注意：Blockly 复选框通常返回字符串 "TRUE" 或 "FALSE"
+
+                                    // 进行你的业务判断
+                                    Console.WriteLine($"事件ID: {eventId}");
+
+                                    if (isExportRaw == "TRUE")
+                                    {
+                                        Console.WriteLine("状态：对话单独导出已【开启】");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("状态：对话单独导出已【关闭】");
+                                    }
+
+                                    // 如果你只需要处理 entrance 块，可以在处理完后 break
+                                    // break; 
+                                }
+                            }
+
+                            // 打印完整 JSON 供调试 (可选)
+                            // Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
                             break;
 
 
@@ -225,15 +270,18 @@ class EventEditorModMiddleware
                             string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
 
                             new Program().Send("MiaoAicMod_Mod", payload);
+
+
+
                             break;
                     }
                 }).Wait();
 
                 //主页面
-                page.GotoAsync("https://api.ica.wiki/AIC/EventEditor/").Wait();
+                page.GotoAsync(EditorUrl).Wait();
                 page.WaitForLoadStateAsync(LoadState.DOMContentLoaded).Wait();
 
-
+                Console.WriteLine("启动完成");
 
                 //注入 修改文字
 
@@ -279,8 +327,6 @@ class EventEditorModMiddleware
     targetP.insertAdjacentElement('afterend', newP);
 })();
 ").Wait();
-
-
 
                 //注入 css
                 page.EvaluateAsync(@"
@@ -391,6 +437,7 @@ class EventEditorModMiddleware
             public string Text { get; set; }
             public int Pid { get; set; }
             public string Objective { get; set; }
+            public string EditorUrl { get; set; }
         }
 
     }
