@@ -24,6 +24,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
 using System.Text;
 using System.Text;
 using System.Text.Json;
@@ -105,6 +106,9 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private static bool GUI_Bool_ModDebug_Export_Resources = false; // 开关_Mod调试_导出资源
         private static bool GUI_Bool_ModDebug_Noel_info = false; //开关_Mod调试_显示Noel信息
 
+        private static string GUI_TextField_Objective = "chrome";//使用什浏览器
+        private static string GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor/";//打开的网址
+
         private Vector2 svPos; // 界面滑动条
 
         #endregion
@@ -158,11 +162,33 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             var exportMap = new Dictionary<string, (string Dir, string OutputName)>
             {
                 // 资源名                         // 导出目录                               // 导出后的文件名
-                { "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins"), "Newtonsoft.Json.dll") },
+                //{ "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins"), "Newtonsoft.Json.dll") },
                 { "Data.ExportedAssets.__events_restroom.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_restroom.pxls.bytes.texture_0") },
                 { "Data.ExportedAssets.key_noel.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "key_noel") },
                 { "Data.ExportedAssets.__events_2weekattack.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_2weekattack.pxls.bytes.texture_0") },
                 { "Data.ExportedAssets.title_logo.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "title_logo") },
+                //事件编辑器相关文件
+                { "Data.EventEditorModMiddleware.exe", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "EventEditorModMiddleware.exe") },
+                { "DLL.Microsoft.Bcl.AsyncInterfaces.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Bcl.AsyncInterfaces.dll") },
+                { "DLL.Microsoft.CSharp.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.CSharp.dll") },
+                { "DLL.Microsoft.Playwright.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Playwright.dll") },
+                { "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Newtonsoft.Json.dll") },
+                { "DLL.System.Buffers.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Buffers.dll") },
+                { "DLL.System.ComponentModel.Annotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.Annotations.dll") },
+                { "DLL.System.ComponentModel.DataAnnotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.DataAnnotations.dll") },
+                { "DLL.System.Data.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Data.dll") },
+                { "DLL.System.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.dll") },
+                { "DLL.System.IO.Pipelines.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.IO.Pipelines.dll") },
+                { "DLL.System.Memory.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Memory.dll") },
+                { "DLL.System.Net.Http.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Net.Http.dll") },
+                { "DLL.System.Numerics.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.dll") },
+                { "DLL.System.Numerics.Vectors.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.Vectors.dll") },
+                { "DLL.System.Runtime.CompilerServices.Unsafe.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Runtime.CompilerServices.Unsafe.dll") },
+                { "DLL.System.Text.Encodings.Web.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Encodings.Web.dll") },
+                { "DLL.System.Text.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Json.dll") },
+                { "DLL.System.Threading.Tasks.Extensions.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Threading.Tasks.Extensions.dll") },
+                { "DLL.System.Xml.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.dll") },
+                { "DLL.System.Xml.Linq.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.Linq.dll") },
             };
 
             foreach (var item in exportMap)
@@ -259,7 +285,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         {
             if (showWindow)
             {
-                WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
+                WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:这是mod窗口哦~");
 
             }
             if (WindowsRect_utilization_agreement_showWindow)
@@ -523,10 +549,53 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             #endregion
 
             #region debug
+
             GUILayout.BeginVertical(GUI.skin.box);//竖排
             GUILayout.BeginHorizontal();//横排
+
+            GUILayout.Label("使用什么浏览器启动"); 
+            if (GUILayout.Button("Google Chrome"))
+            {
+                GUI_TextField_Objective = "chrome";
+            }
+            if (GUILayout.Button("microsoft Edge"))
+            {
+                GUI_TextField_Objective = "msedge";
+            }
+            GUILayout.EndHorizontal();
+
+
+            GUI_TextField_Objective = GUILayout.TextField(GUI_TextField_Objective);
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("使用那个镜像站"); // 文字
+            if (GUILayout.Button("普莉姆拉主站"))
+            {
+                GUI_TextField_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
+            }
+            if (GUILayout.Button("本苗镜像站"))
+            {
+                GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
+            }
+            GUILayout.EndHorizontal();
+            GUI_TextField_WebUiUrl = GUILayout.TextField(GUI_TextField_WebUiUrl);
+
+
+            GUILayout.BeginHorizontal();//横排
+
+
             if (GUILayout.Button("启动事件管理器"))
             {
+                new EventEditor().run_HaLua(@"
+TX_BOARD <<<EOF 
+<c6>正在启动事件管理器
+<c6>等待几秒后会弹出浏览器窗口
+<c6>
+<c2>事件管理器还在测试
+<c2>有可能会出现bug
+<c2>还请谅解~
+EOF;
+");
                 Task.Run(() =>
                 {
 
@@ -557,7 +626,8 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                         Type = "EventEditor_Start",
                         Text = "",
                         Pid = Game_PID,
-                        Objective = "chrome",
+                        Objective = GUI_TextField_Objective,
+                        EditorUrl = GUI_TextField_WebUiUrl,
                     };
 
                     string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
@@ -581,7 +651,8 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                     Type = "EventEditor_Start",
                     Text = "",
                     Pid = Game_PID,
-                    Objective = "chrome",
+                    Objective = GUI_TextField_Objective,
+                    EditorUrl = GUI_TextField_WebUiUrl,
                 };
 
                 string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
@@ -590,51 +661,52 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             }
             GUI.enabled = true;
 
-            if (GUILayout.Button("Test"))
+            GUILayout.EndHorizontal();
+            if (GUI_Bool_ModDebug == true)
             {
-                try
+                if (GUILayout.Button("Test1"))
                 {
-                    // 1. 获取 STB 对象
-                    STB stb = TX.PopBld(null, 0);
+                    try
+                    {
+                        // 1. 获取 STB 对象
+                        STB stb = TX.PopBld(null, 0);
 
-                    // 2. 构造事件脚本
-                    stb.Add (@"
-MSG n_<<<EOF 
-<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
-EOF;
-"); 
-
-                    // 3. 创建 EvReader
-                    EvReader evReader = new EvReader("%BENCH_EVENT", 0, null, null);
-
-                    // 4. 解析 STB 脚本
-                    evReader.parseText(stb);
-
-                    // 5. 放入事件队列执行
-                    EV.stackReader(evReader, -1);
-
-                    // 6. 释放 STB
-                    TX.ReleaseBld(stb);
-
-                    Logger.LogWarning("[STBExecutor] 脚本已执行");
-                }
-                catch (System.Exception ex)
-                {
-
-                    Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
-                }
-            }
-            if (GUILayout.Button("Test2"))
-            {
-                new EventEditor().run_HaLua(@"
-PIC_FLASH &0 25 10 25 WHITE
+                        // 2. 构造事件脚本
+                        stb.Add(@"
 MSG n_<<<EOF 
 <c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
 EOF;
 ");
-            }
-            GUILayout.EndHorizontal();
 
+                        // 3. 创建 EvReader
+                        EvReader evReader = new EvReader("%BENCH_EVENT", 0, null, null);
+
+                        // 4. 解析 STB 脚本
+                        evReader.parseText(stb);
+
+                        // 5. 放入事件队列执行
+                        EV.stackReader(evReader, -1);
+
+                        // 6. 释放 STB
+                        TX.ReleaseBld(stb);
+
+                        Logger.LogWarning("[STBExecutor] 脚本已执行");
+                    }
+                    catch (System.Exception ex)
+                    {
+
+                        Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
+                    }
+                }
+                if (GUILayout.Button("Test2"))
+                {
+                    new EventEditor().run_HaLua(@"
+TX_BOARD <<<EOF 
+<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
+EOF;
+");
+                }
+            }
             GUILayout.EndHorizontal();
             #endregion
 
@@ -1730,7 +1802,6 @@ EOF;
             public string Message { get; set; }
         }
 
-
         public bool Send(string Objective,string text)
         {
 
@@ -1770,7 +1841,7 @@ EOF;
             try
             {
 
-                // 1 缓存到 EV.Oevt_content（使用反射，保证能访问私有字段）
+                // 1 缓存到 EV.Oevt_content
                 var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
                 var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
                 evtContent[text] = text;
@@ -1779,7 +1850,7 @@ EOF;
                 EvReader ER = new EvReader(text, 0, null, null);
                 ER.parseText(text);
                 EV.stackReader(ER, -1);
-
+                
                 UnityEngine.Debug.Log("[CMDExecutor] 脚本执行完成: " + text);
             }
             catch (System.Exception ex)
@@ -1788,15 +1859,14 @@ EOF;
             }
         }
 
-
         public class DataJson
         {
             public string Type { get; set; }
             public string Text { get; set; }
             public int Pid { get; set; }
             public string Objective { get; set; }
+            public string EditorUrl { get; set; }
         }
-
 
         public bool Receive(string Objective)
         {

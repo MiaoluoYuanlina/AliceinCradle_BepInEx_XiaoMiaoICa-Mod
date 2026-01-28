@@ -45,10 +45,31 @@
     <EmbeddedResource Include="powershell\reopen_1.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="DLL\Microsoft.Bcl.AsyncInterfaces.dll" />
+    <EmbeddedResource Include="DLL\Microsoft.CSharp.dll" />
+    <EmbeddedResource Include="DLL\Microsoft.Playwright.dll" />
+    <EmbeddedResource Include="DLL\System.Buffers.dll" />
+    <EmbeddedResource Include="DLL\System.ComponentModel.Annotations.dll" />
+    <EmbeddedResource Include="DLL\System.ComponentModel.DataAnnotations.dll" />
+    <EmbeddedResource Include="DLL\System.Data.DataSetExtensions.dll" />
+    <EmbeddedResource Include="DLL\System.Data.dll" />
+    <EmbeddedResource Include="DLL\System.dll" />
+    <EmbeddedResource Include="DLL\System.IO.Pipelines.dll" />
+    <EmbeddedResource Include="DLL\System.Memory.dll" />
+    <EmbeddedResource Include="DLL\System.Net.Http.dll" />
+    <EmbeddedResource Include="DLL\System.Numerics.dll" />
+    <EmbeddedResource Include="DLL\System.Numerics.Vectors.dll" />
+    <EmbeddedResource Include="DLL\System.Runtime.CompilerServices.Unsafe.dll" />
+    <EmbeddedResource Include="DLL\System.Text.Encodings.Web.dll" />
+    <EmbeddedResource Include="DLL\System.Text.Json.dll" />
+    <EmbeddedResource Include="DLL\System.Threading.Tasks.Extensions.dll" />
+    <EmbeddedResource Include="DLL\System.Xml.dll" />
+    <EmbeddedResource Include="DLL\System.Xml.Linq.dll" />
     <EmbeddedResource Include="Data\ExportedAssets\key_noel.png" />
     <EmbeddedResource Include="Data\ExportedAssets\title_logo.png" />
     <EmbeddedResource Include="Data\ExportedAssets\__events_restroom.pxls.bytes.texture_0.png" />
     <EmbeddedResource Include="Data\ExportedAssets\__events_2weekattack.pxls.bytes.texture_0.png" />
+    <EmbeddedResource Include="Data\EventEditorModMiddleware.exe" />
     <Content Include="Data\Newtonsoft.Json.dll" />
     <Content Include="Data\UnityExplorer.BIE6.Mono.dll" />
     <Content Include="Data\UniverseLib.Mono.dll" />
