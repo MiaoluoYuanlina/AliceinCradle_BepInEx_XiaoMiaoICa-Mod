@@ -1,504 +1,1470 @@
+﻿using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using BepInEx.Unity.Mono;
+//游戏dll引用
+using evt;//unsafeAssem.dll
+using HarmonyLib;
+using m2d;
+using nel; //Assembly-CSharp.dll
+
+using Newtonsoft.Json;
 using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO;
+using System.IO.Pipes;
+using System.IO.Pipes;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Reflection;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.IO;
-using System.Net.Http;
-using System.Net;
-using System.IO.Compression;
-using ICSharpCode.SharpZipLib.Zip;
-using System.Security.Cryptography;
 using System.Windows.Forms;
-using System.Security.Policy;
-using Newtonsoft.Json;
+using System.Xml.Linq;
+using UnityEngine;
+using UnityEngine;
+using UnityEngine.UI; 
+using XX;
+using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.EventEditor;
+using static evt.EvDrawerContainer;
+using static nel.MatoateReader;
+using static nel.NelChipPuzzleBox;
+using static nel.UiHkdsChat;
 using static System.Net.Mime.MediaTypeNames;
-using System.Text.RegularExpressions;
-using IWshRuntimeLibrary;
-using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 
-
-
-
-namespace installer_Mod
+namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 {
-    internal class Program
-    {
-        #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "4718959462136daa01c5315c254ad409";
-        readonly string OFFLINE_BPEEX_MOD5 = "f34c5c5df840f0e8667da9dd85bf9e15";
-        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/752/BepInEx-Unity.Mono-win-x64-6.0.0-be.752%2Bdd0655f.zip";
-        readonly string ONLINE_MD5_BEPEX = "2afe8b0fe5ecdf43c772ebe90762a5dd";
-        readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
-        readonly string ONLINE_MD5_URL_MOD = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
 
-        private static readonly HttpClient client = new HttpClient();
-        private static readonly string _baseUrl = "https://api.ica.wiki/AIC/log2/index.php";
+
+    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "2.2.1")]
+    public class XiaoMiaoICaMod : BaseUnityPlugin
+    {
+        #region DLL
+        #endregion
+        #region 变量
+
+        //定义为 Instance
+        public static XiaoMiaoICaMod Instance;
+
+        // 配置文件路径
+        private string configFilePath = "XiaoMiaoICa_Mod_Data/config.json";
+
+        //game
+        string Game_directory = null;
+        int Game_PID = 0;
+
+        //用户协议
+        private bool utilization_agreement = false; // 用户协议是否同意
+
+        //UI_用户协议   
+        private Rect WindowsRect_utilization_agreement = new Rect(100, 100, 400, 400); // 主窗口
+        private bool WindowsRect_utilization_agreement_showWindow = false; // 控制窗口显示/隐藏的标志
+
+        //UI
+        private Rect WindowsRect = new Rect(50, 50, 500, 400); // 主窗口
+        private bool showWindow = false; // 控制窗口显示/隐藏的标志
+        private KeyCode toggleKey = KeyCode.Tab; // 用户定义的快捷键
+
+        private string GUI_Textstring = ""; // 输入框
+        private bool GUI_TextBool = false; // 开关
+        private float GUI_TextInt = 1; // 滑动条
+
+        private string GUI_string_toggleKey = "目前快捷键:";//快捷键
+
+        private static bool GUI_Bool_BanMosaic = false; // 开关_禁用马赛克
+        private static bool GUI_Bool_BanMosaic2 = false; // 开关_禁用马赛克
+
+        private static bool GUI_Bool_NOApplyDamage = false; // 开关_免疫伤害
+        private static bool GUI_Bool_NOApplyDamage2 = false; // 开关_不受伤害
+
+        private static string GUI_TextField_Money = "10000";//金币
+
+
+        private static string GUI_TextField_SetHP = "100";//HP
+        private static string GUI_TextField_SetMP = "100";//MP
+        private static bool GUI_Bool_SetHP = false; // 开关_设置HP
+        private static bool GUI_Bool_SetMP = false; // 开关_设置MP
+
+        private static string GUI_TextField_Time = "1"; //变速齿轮
+
+        private static bool GUI_Bool_Debug = false; // 开关_游戏自带调试
+        private string GUI_string_Debug = ""; // 文字_游戏自带调试
+
+        private static bool GUI_Bool_ModDebug = false; // 开关_Mod调试
+        private static bool GUI_Bool_ModDebug_Export_Resources = false; // 开关_Mod调试_导出资源
+        private static bool GUI_Bool_ModDebug_Noel_info = false; //开关_Mod调试_显示Noel信息
+
+        private Vector2 svPos; // 界面滑动条
+
         #endregion
 
-
-
-
-        static int LOG_ID = -1;//日志
-        static bool abort(int return_int)//结束程序
+        void Start()//启动
         {
-            DeletePath(Directory.GetCurrentDirectory() + "/Temp");//删除Temp文件夹
-            if (return_int != 0)
+            Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
+            UnityEngine.Debug.Log("Test1");// Unity输出 灰色
+            Logger.LogError("Test2");// 错误 
+            Logger.LogFatal("Test3");//致命 淡红色
+            Logger.LogWarning("Test4");//警告 黄色
+            Logger.LogInfo("Test6");//信息 灰色            Logger.LogMessage("Test5");//消息 白色
+            Logger.LogDebug("Test7");//调试
+
+            Instance = this;
+
+            var harmony = new Harmony("com.xiaomiao.mod");
+            // 强制指定程序集加载，防止扫描不到
+            var assembly = Assembly.GetExecutingAssembly();
+            harmony.PatchAll(assembly);
+            // 打印已加载的补丁数量来确认
+            var patchedMethods = harmony.GetPatchedMethods();
+            int count = 0;
+            foreach (var method in patchedMethods) count++;
+            Logger.LogInfo($"Harmony 成功加载了 "+count+" 个补丁方法");
+
+
+            //获取PID
+            Process currentProcess = Process.GetCurrentProcess();
+            Game_PID = currentProcess.Id;
+            // 获取当前目录
+            string currentDirectory = Directory.GetCurrentDirectory();
+            Game_directory = currentDirectory;
+            // 组合路径
+            string path = Path.Combine(currentDirectory, "XiaoMiaoICa_Mod_Data");
+            Logger.LogMessage(path);
+            // 检查文件夹是否存在
+            if (!Directory.Exists(path))
             {
-                if (return_int == 1)
+                // 创建文件夹
+                Directory.CreateDirectory(path);
+            }
+
+            const string Py = "XiaoMiao_ICa";
+            
+            Logger.LogMessage("#XiaoMiaoICa: Game_PID:" + Game_PID);
+            Logger.LogMessage("#XiaoMiaoICa: Game_directory:" + Game_directory);
+
+            #region 导出dll和文件
+           
+            var exportMap = new Dictionary<string, (string Dir, string OutputName)>
+            {
+                // 资源名                         // 导出目录                               // 导出后的文件名
+                { "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins"), "Newtonsoft.Json.dll") },
+                { "Data.ExportedAssets.__events_restroom.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_restroom.pxls.bytes.texture_0") },
+                { "Data.ExportedAssets.key_noel.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "key_noel") },
+                { "Data.ExportedAssets.__events_2weekattack.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_2weekattack.pxls.bytes.texture_0") },
+                { "Data.ExportedAssets.title_logo.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "title_logo") },
+            };
+
+            foreach (var item in exportMap)
+            {
+                string resourceFile = item.Key;
+                string exportDir = item.Value.Dir;
+                string outputName = item.Value.OutputName;
+
+                string targetPath = Path.Combine(exportDir, outputName);
+
+                Directory.CreateDirectory(exportDir);
+
+                if (File.Exists(targetPath))
                 {
-                    MessageBox.Show("无法链接至主要服务器!\n你可以尝试更改DNS服务器在尝试运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    WriteLine_color("无法链接至主要服务器!\n你可以尝试更改DNS服务器在尝试运行本程序.", ConsoleColor.Red);
-                }
-                else if (return_int == 2)
-                {
-                    WriteLine_color("无法链接至主要服务器!\n你可以尝试更改DNS服务器在尝试运行本程序.", ConsoleColor.Red);
-                    MessageBox.Show("无法链接至主要服务器!\n你可以尝试更改DNS服务器在尝试运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 3)
-                {
-                    WriteLine_color("BepExMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", ConsoleColor.Red);
-                    MessageBox.Show("BepExMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 4)
-                {
-                    WriteLine_color("ModMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", ConsoleColor.Red);
-                    MessageBox.Show("ModMD5哈希验证失败。\n这可能是在下载文件时出现了网络波动等情况,你可以尝试重新运行本程序.", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 5)
-                {
-                    WriteLine_color("游戏路径包含中文!BepEx不支持中文路径!\n请将游戏复制到没有中文的目录!", ConsoleColor.Red);
-                    MessageBox.Show("游戏路径包含中文!BepEx不支持中文路径!\n请将游戏复制到没有中文的目录!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 6)
-                {
-                    WriteLine_color("获取MD5验证值失败!", ConsoleColor.Red);
-                    MessageBox.Show("获取MD5验证值失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 7) 
-                {
-                    WriteLine_color("获取Mod下载链接失败!", ConsoleColor.Red);
-                    MessageBox.Show("获取Mod下载链接失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 8)
-                {
-                    WriteLine_color("解析GitHub下载地址失败!", ConsoleColor.Red);
-                    MessageBox.Show("解析GitHub下载地址失败!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 9)
-                {
-                    WriteLine_color("下载游戏本体失败！", ConsoleColor.Red);
-                    MessageBox.Show("下载游戏本体失败！", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 10)
-                {
-                    WriteLine_color("解压游戏本体失败！", ConsoleColor.Red);
-                    MessageBox.Show("解压游戏本体失败！", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 11)
-                {
-                    WriteLine_color("BepExMD5导出失败。\n这可能是文件被某些其他程序占用", ConsoleColor.Red);
-                    MessageBox.Show("BepExMD5导出失败。\n这可能是文件被某些其他程序占用", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 12)
-                {
-                    WriteLine_color("MOD导出失败。\n这可能是文件被某些其他程序占用", ConsoleColor.Red);
-                    MessageBox.Show("MOD导出失败。\n这可能是文件被某些其他程序占用", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 13)
-                {
-                    WriteLine_color("下载游戏失败！", ConsoleColor.Red);
-                    MessageBox.Show("可能是由于官方更新了新版本，而脚本还没更新。\n请尝试自行下载游戏本体，或者等待更新！\n游戏官网 https://cn.aliceincradle.dev", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (return_int == 14)
-                {
-                    WriteLine_color("未知错误!", ConsoleColor.Red);
-                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Console.WriteLine($"文件已存在：{targetPath}");
                 }
                 else
                 {
-                    WriteLine_color("未知错误!", ConsoleColor.Red);
-                    MessageBox.Show("未知错误!", "欧尼酱~出错啦~", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                if (MessageBox.Show("你在运行本程序时出现了问题!\n你可以尝试联系本苗!本苗会帮助你解决一些问题~\n记得带上你的终端截图!要不从雨来了也帮不了你啦~\n\n是否要联系本苗?", "欧尼酱~你想要帮助吗?", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-                {
-                    Process.Start(new ProcessStartInfo("https://xiaomiao.ica.wiki") { UseShellExecute = true });
-                }
+                    Console.WriteLine($"导出 {resourceFile} → {targetPath}");
 
+                    ExportEmbedResources(
+                        "Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile,
+                        targetPath
+                    );
+                }
+            }
+
+
+
+            #endregion
+            #region 用户协议
+            string initext = "";
+            try
+            {
+                initext = M_EF.Config_Read(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
+
+            }
+            catch
+            {
+                Logger.LogWarning("读取配置文件出错！");
+            }
+            if (initext == "true")
+            {
+                Logger.LogMessage("用户同意使用协议");
+                utilization_agreement = true;
             }
             else
             {
+                Logger.LogWarning("用户未同意使用协议");
+                utilization_agreement = false;
+            }
+            if (utilization_agreement == true)
+            {
+                showWindow = true;
+            }
+            else
+            {
+                WindowsRect_utilization_agreement_showWindow = true;
+            }
+            #endregion
+            #region 读取配置文件
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic") == "True")
+            {
+                GUI_Bool_BanMosaic = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic2") == "True")
+            {
+                GUI_Bool_BanMosaic2 = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage") == "True")
+            {
+                GUI_Bool_NOApplyDamage = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage2") == "True")
+            {
+                GUI_Bool_NOApplyDamage2 = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug") == "True")
+            {
+                GUI_Bool_ModDebug = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Export_Resources") == "True")
+            {
+                GUI_Bool_ModDebug_Export_Resources = true;
+            }
+            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            {
+                GUI_Bool_ModDebug_Noel_info = true;
+            }
+            #endregion
+        }
+        
+        void OnGUI()//绘制UI
+        {
+            if (showWindow)
+            {
+                WindowsRect = GUILayout.Window(0721, WindowsRect, WindowsFunc, "苗萝缘莉雫:Hello World");
 
             }
-            WriteLine_color("运行结束！", ConsoleColor.Green);
-
-            Thread.Sleep(10000);
-            Environment.Exit(return_int);
-            WriteLine_color("自动退出！", ConsoleColor.Green);
-            return true;
-        }
-        static int Name_Get_PID(string processName) // 获取进程的PID
-        {
-            try
+            if (WindowsRect_utilization_agreement_showWindow)
             {
-                // 获取匹配的进程
-                Process[] processes = Process.GetProcessesByName(processName);
+                WindowsRect_utilization_agreement = GUILayout.Window(0720, WindowsRect_utilization_agreement, WindowsFunc_utilization_agreement, "苗萝缘莉雫:《Alice in Cradle》第三方Mod使用协议");
+            }
+        }
 
-                if (processes.Length == 0)
+        void Update()//触发点击按键
+        {
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+
+            }
+            //if (Input.GetKeyDown(KeyCode.Tab)) // 替换为你想要的快捷键
+            //{
+            //    showWindow = !showWindow; // 切换窗口显示状态
+            //}
+            if (Input.GetKeyDown(toggleKey))
+            {
+                showWindow = !showWindow; // 切换窗口显示状态
+            }
+        }
+
+
+        public void WindowsFunc_utilization_agreement(int id)//控件_用户协议
+        {
+
+            if (utilization_agreement == true)
+            {
+                M_EF.Config_Write(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement", "true");
+                showWindow = true; // 显示主窗口
+                WindowsRect_utilization_agreement_showWindow = false; // 关闭窗口
+            }
+
+            //WindowsRect_utilization_agreement = new Rect(50, 50, 700, 500);
+
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            Color redColor = new Color32(0, 0, 0, 0);
+
+            redColor = new Color32(255, 153, 51, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("原始游戏:指《Alice in Cradle》原始游戏文件。\nMOD:指XiaoMiao_ICa开发的非官方开源衍生作品。", style);
+
+
+            redColor = new Color32(255, 0, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("禁止将本Mod用于商业用途，或者修改后用于商业用途。\n", style); // 文字
+
+            redColor = new Color32(255, 255, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("Mod由第三方非官方开发者开发！与原始游戏官方无关联，请不要将mod引起的游戏崩溃日志提供给官方，因为官方不会为mod提供支持，还会因为未知的错误影响官方的开发！\n", style);
+
+
+            // 在顶部插空白空间
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("同意协议")) // 按钮
+            {
+                utilization_agreement = true; // 用户协议同意
+            }
+            if (GUILayout.Button("拒绝协议")) // 按钮
+            {
+                Process.Start("powershell.exe", "-command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('如果不同意使用协议，请立刻卸载Mod！', '欧尼酱~你拒绝了用户协议呢~', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)\"");
+                Process.GetCurrentProcess().Kill();
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+
+            //if (GUILayout.Button("Text")) // 按钮
+            //{
+            //}
+        }
+
+        public void WindowsFunc(int id)//控件
+        {
+            #region 控件
+
+            #region TIP
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            Color redColor = new Color32(255, 0, 0, 255);
+            style.normal.textColor = redColor;
+            GUILayout.Label("本Mod包括游戏本体完全免费！为爱发电，如果你是购买而来，证明你被骗啦！", style); // 文字
+            #endregion
+            
+            svPos = GUILayout.BeginScrollView(svPos);// 开始滚动视图
+
+            #region 保存配置
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("保存配置到配置文件"))
+            {
+                SavepreferencesConfig();
+            }
+            GUILayout.Label("将当前配置保存，下次启动自动读取。"); // 文字
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 快捷键
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("设置窗口隐藏显示快捷键")) // 按钮
+            {
+                StartCoroutine(SetCustomKey());//调用函数
+            }
+            GUILayout.Label(GUI_string_toggleKey + toggleKey); // 文字
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 马赛克
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            GUILayout.BeginVertical();//竖排
+            GUI_Bool_BanMosaic = GUILayout.Toggle(GUI_Bool_BanMosaic, "禁止由代码生成的马赛克生成");
+            GUILayout.Label("代码生成的马赛克是动态加载的，如在长椅上0721的时候，生成的马赛克就是动态生成的。"); // 文字
+            GUI_Bool_BanMosaic2 = GUILayout.Toggle(GUI_Bool_BanMosaic2, "替换被马赛克修改过的图片");
+            GUILayout.Label("被马赛克修改过的图片修改的图是指CG。哈酱在把画完的CG放进游戏的时候，马赛克已经被涂在游戏CG上了，所以这是不可逆的。"); // 文字
+            GUILayout.Label("所以本苗只能手绘，或者使用AI，但是我还没弄明白怎么用AI去除涩图上的马赛克。现在看来就只能进行手绘了，我也没什么绘画技术，只能先凑合用吧。目前我只手绘了少量图片馁，并没有覆盖游戏的全部CG，毕竟时间画技有限。"); // 文字
+            GUILayout.EndHorizontal(); 
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 免疫伤害
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            GUILayout.BeginVertical();//竖排
+            GUILayout.Label("此选项可能影响的不止玩家操作的角色,如果出现杀不死的魔族请关闭此选项。"); // 文字
+            GUI_Bool_NOApplyDamage2 = GUILayout.Toggle(GUI_Bool_NOApplyDamage2, "免疫伤害");
+            GUILayout.Label("免疫魔族和环境对你造成伤害"); // 文字
+            GUI_Bool_NOApplyDamage = GUILayout.Toggle(GUI_Bool_NOApplyDamage, "不受伤害");
+            GUILayout.Label("使你的生命值不被修改"); // 文字
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region HPMP
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+
+            //GUILayout.Label("text");
+            if (GUILayout.Button("设置HP") || GUI_Bool_SetHP == true) // 按钮
+            {
+                int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_SetHP));
+                Mod_Noel.SetHp(textint);
+                GUI_TextField_SetHP = textint.ToString(); 
+
+            }
+            GUI_Bool_SetHP = GUILayout.Toggle(GUI_Bool_SetHP, "锁定HP");
+            GUI_TextField_SetHP = GUILayout.TextField(GUI_TextField_SetHP, GUILayout.Width(100));
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("设置MP") || GUI_Bool_SetMP == true) // 按钮
+            {
+                int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_SetMP));
+                Mod_Noel.SetMp(textint);
+                GUI_TextField_SetMP = textint.ToString();
+            }
+            GUI_Bool_SetMP = GUILayout.Toggle(GUI_Bool_SetMP, "锁定MP");
+            GUI_TextField_SetMP = GUILayout.TextField(GUI_TextField_SetMP, GUILayout.Width(100));
+
+
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 金币
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+
+            //GUILayout.Label("text");
+            if (GUILayout.Button("修改金币")) // 按钮
+            {
+                int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_Money));
+                Mod_Noel.SetMoney(textint);
+                GUI_TextField_Money = textint.ToString();
+            }
+            GUI_TextField_Money = GUILayout.TextField(GUI_TextField_Money, GUILayout.Width(100));
+
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 变速齿轮
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            if (GUILayout.Button("修改游戏速度")) // 按钮
+            {
+                int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_Time));
+                Time.timeScale = textint; // 游戏加速
+                GUI_TextField_Time = textint.ToString();
+            }
+            GUI_TextField_Time = GUILayout.TextField(GUI_TextField_Time, GUILayout.Width(100));
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region debug
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("使用游戏原版调试Debug");
+            if (GUILayout.Button("启用该功能")) // 按钮
+            {
+                Patch_X_LoadDebug.GameDeBug (true);
+                GUI_string_Debug = "重新读档才能生效！";
+
+            }
+            if (GUILayout.Button("关闭该功能")) // 按钮
+            {
+                Patch_X_LoadDebug.GameDeBug (false);
+                GUI_string_Debug = "重新读档才能生效！";
+            }
+            //if (GUILayout.Button("打开/关闭 GUI F7")) // 按钮
+            //{
+            //    strikeF7();
+            //}
+            GUILayout.EndHorizontal();
+            //if (GUILayout.Button("Test")) // 按钮
+            //{
+            //    Patch_X_LoadDebug.SetBool("timestamp", true);
+            //    Patch_X_LoadDebug.SetBool("announce", true);
+            //}
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("启用后点击F7开启关闭GUI！");
+            GUILayout.Label(GUI_string_Debug, style);
+            GUILayout.EndHorizontal();
+            GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
+                "\n╔< 汉化栏" +
+                "\n╠══╦⇒ ? ↴ " +
+                "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
+                "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
+                "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
+                "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
+                "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
+                "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
+                "\n╟    ╚═⇒ seed ⇄ 种子" +
+                "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
+                "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
+                "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
+                "\n╟    ╠═⇒ pos ⇄ 坐标" +
+                "\n╟    ╚══> 右边的敌队生物翻译一样。" +
+                "\n╠══╦⇒ item ⇄ 物品" +
+                "\n╟    ╠═⇒ Grade ⇄ 数量" +
+                "\n╟    ╠═⇒ Money ⇄ 钱币" +
+                "\n╟    ╠═⇒ All ⇄ 全部物品" +
+                "\n╟    ╠═⇒ CURE ⇄ 治疗" +
+                "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
+                "\n╟    ╠═⇒ MTR ⇄ 材料" +
+                "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
+                "\n╟    ╠═⇒ WATER ⇄ 水" +
+                "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
+                "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
+                "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
+                "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
+                "\n╟    ╠═⇒ TOOL ⇄ 工具" +
+                "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
+                "\n╟    ╠═⇒ SKILL ⇄ 技能" +
+                "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
+                "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
+                "\n⇓" +
+                "\n待更新");
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region debug
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("启动事件管理器"))
+            {
+                Task.Run(() =>
                 {
-                    //Console.WriteLine($"未找到名为 \"{processName}\" 的进程。");
-                    return 0; // 返回0表示未找到进程
-                }
-                else if (processes.Length > 1)
-                {
-                    //Console.WriteLine($"找到多个名为 \"{processName}\" 的进程，请确认唯一性。");
-                    return 0; // 返回0表示找到多个进程
-                }
 
-                // 返回唯一进程的 PID
-                return processes[0].Id;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"方法 Name_Get_PID:获取进程 PID 时出错：{ex.Message}");
-                return 0; // 出错时返回0
-            }
-        }
-        static string Pid_Get_Path(int pid)//获取进程的路径
-        {
-            try
-            {
-                Process process = Process.GetProcessById(pid);
-                return process.MainModule.FileName;
-            }
-            catch (ArgumentException)
-            {
-                //Console.WriteLine("方法 Kill_Pid:指定 PID 的进程不存在。");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"方法 Kill_Pid:错误: {ex.Message}");
-            }
 
-            return null;  // 返回 null 如果获取路径失败
-        }
-        static void Kill_Pid(int pid)//通过PID结束进程
-        {
-            try
-            {
-                // 获取指定 PID 的进程
-                Process process = Process.GetProcessById(pid);
-
-                // 调用 Kill 方法终止进程
-                process.Kill();
-                //Console.WriteLine($"方法 Kill_Pid:成功终止 PID 为 {pid} 的进程。");
-            }
-            catch (Exception ex)
-            {
-                // 捕获并显示异常信息
-                Console.WriteLine($"方法 Kill_Pid:终止 PID 为 {pid} 的进程时出错：{ex.Message}");
-            }
-        }
-        static string Get_Parent_Directory(string filePath)//获取文件路径的父目录
-        {
-            try
-            {
-                // 获取父目录路径
-                string parentDirectory = Directory.GetParent(filePath)?.FullName;
-
-                if (parentDirectory == null)
-                {
-                    //throw new Exception("方法 Get_Parent_Directory:无法获取父目录路径。");
-                }
-
-                return parentDirectory;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"方法 Get_Parent_Directory:错误: {ex.Message}");
-                return string.Empty;
-            }
-        }
-        static async Task<double> GetUrlResponseTimeAsync(string url)//获取 URL 的响应时间
-        {
-            try
-            {
-                // 创建 HttpClient 实例
-                using (HttpClient client = new HttpClient())
-                {
-                    // 记录请求开始时间
-                    var startTime = DateTime.Now;
-
-                    // 发送请求并获取响应
-                    HttpResponseMessage response = await client.GetAsync(url);
-
-                    // 记录响应时间
-                    var responseTime = DateTime.Now - startTime;
-
-                    // 返回响应时间（毫秒）
-                    return responseTime.TotalMilliseconds;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"请求 URL 时出错: {ex.Message}");
-                return -1;  // 返回-1表示发生了错误
-            }
-        }
-        static int WriteLine_color(string text , ConsoleColor color)//输出带颜色的文字
-        {
-
-            Console.ForegroundColor = color;
-            Console.WriteLine(text);
-            Console.ResetColor();
-            if (LOG_ID != -1)
-            {
-                LOG_SubmitTextAsync(LOG_ID.ToString(), text);
-            }
-                
-
-            return 0;
-        }
-        static string GetUrlTxt(string url)//获取文本文件内容
-        {
-            try
-            {
-                using (WebClient client = new WebClient())
-                {
-                    // 获取文本文件内容
-                    string content = client.DownloadString(url);
-                    return content;
-                }
-            }
-            catch (Exception ex)
-            {
-                return $"发生错误：{ex.Message}";
-            }
-        }
-        static void ExtractZipWithProgress(string zipFilePath, string extractPath)//解压文件
-        {
-            try
-            {
-                using (ZipArchive archive = System.IO.Compression.ZipFile.OpenRead(zipFilePath))
-                {
-                    long totalEntries = archive.Entries.Count;
-                    long currentEntry = 0;
-
-                    foreach (var entry in archive.Entries)
+                    Task.Run(() =>
                     {
-                        currentEntry++;
-                        string destinationPath = Path.Combine(extractPath, entry.FullName);
+                        new EventEditor().Receive("MiaoAicMod_Mod");
 
-                        // 检查并创建目录
-                        if (string.IsNullOrEmpty(entry.Name))
+                    });
+                    Task.Run(() =>
+                    {
+                        ;
+                        string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Game_directory + "\\BepInEx\\plugins\\XiaoMiao_ICa\\EventEditorModMiddleware.exe");
+
+                        if (!File.Exists(exePath))
+                            return;
+
+                        Process.Start(new ProcessStartInfo
                         {
-                            Directory.CreateDirectory(destinationPath);
+                            FileName = exePath,
+                            UseShellExecute = true,
+                            WorkingDirectory = Path.GetDirectoryName(exePath)
+                        });
+                    });
+                    Thread.Sleep(5000); // 卡住当前线程
+                    DataJson json = new DataJson
+                    {
+                        Type = "EventEditor_Start",
+                        Text = "",
+                        Pid = Game_PID,
+                        Objective = "chrome",
+                    };
+
+                    string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
+
+                    new EventEditor().Send("MiaoAicMod_EventEditor", payload);
+
+
+
+
+                });
+            }
+
+            //GUI.enabled = new EventEditor().IsConnected;
+            GUI.enabled= true;
+
+            if (GUILayout.Button("重新启动事件管理器"))
+            {
+
+                DataJson json = new DataJson
+                {
+                    Type = "EventEditor_Start",
+                    Text = "",
+                    Pid = Game_PID,
+                    Objective = "chrome",
+                };
+
+                string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
+
+                new EventEditor().Send("MiaoAicMod_EventEditor", payload);
+            }
+            GUI.enabled = true;
+
+            if (GUILayout.Button("Test"))
+            {
+                try
+                {
+                    // 1. 获取 STB 对象
+                    STB stb = TX.PopBld(null, 0);
+
+                    // 2. 构造事件脚本
+                    stb.Add (@"
+MSG n_<<<EOF 
+<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
+EOF;
+"); 
+
+                    // 3. 创建 EvReader
+                    EvReader evReader = new EvReader("%BENCH_EVENT", 0, null, null);
+
+                    // 4. 解析 STB 脚本
+                    evReader.parseText(stb);
+
+                    // 5. 放入事件队列执行
+                    EV.stackReader(evReader, -1);
+
+                    // 6. 释放 STB
+                    TX.ReleaseBld(stb);
+
+                    Logger.LogWarning("[STBExecutor] 脚本已执行");
+                }
+                catch (System.Exception ex)
+                {
+
+                    Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
+                }
+            }
+            if (GUILayout.Button("Test2"))
+            {
+                new EventEditor().run_HaLua(@"
+PIC_FLASH &0 25 10 25 WHITE
+MSG n_<<<EOF 
+<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
+EOF;
+");
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region ModDebug
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            GUILayout.BeginVertical();//竖排
+            GUI_Bool_ModDebug = GUILayout.Toggle(GUI_Bool_ModDebug, "当前选项全部为Mod调试选项，请勿随意启用。");
+            GUILayout.BeginVertical();//竖排
+            if (GUI_Bool_ModDebug == true)
+            {
+                GUILayout.BeginVertical();//竖排
+                GUI_Bool_ModDebug_Export_Resources = GUILayout.Toggle(GUI_Bool_ModDebug_Export_Resources, "导出正在加载的资源文件");
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginVertical();//竖排
+                GUI_Bool_ModDebug_Noel_info = GUILayout.Toggle(GUI_Bool_ModDebug_Noel_info, "显示Noel数据");
+                if (GUI_Bool_ModDebug == true)
+                {
+                    if (GUI_Bool_ModDebug_Noel_info == true)
+                    {
+                        GameObject player = GameObject.Find("Noel");
+                        if (player == null)
+                        {
+                            GUILayout.Label("未找到 Noel ;"); // 文字
                         }
                         else
                         {
-                            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
-                            entry.ExtractToFile(destinationPath, overwrite: true);
+                            PRNoel pr = player.GetComponent<PRNoel>();
+
+                            if (pr == null)
+                            {
+
+                                GUILayout.Label("未找到 PRNoel 组件 ;"); // 文字
+                            }
+                            else if (pr == null)
+                            {
+                                GUILayout.Label("未找到 PRNoel 组件 ;" + pr.ToString()); // 文字
+                            }
+                            else
+                            {
+
+                                int UI_X = 100;
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_carry_vx 运动速度X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_carry_vx().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_carry_vy 运动速度Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_carry_vy().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_walk_xspeed 水平移动速度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_walk_xspeed().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_hp 生命值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_hp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_maxhp 最大生命:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_maxhp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_maxmp 最大魔力:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_maxmp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_mp 魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_mp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_current_state 当前状态:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_current_state().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_state_time 状态持续时间:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_state_time().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_ep 兴奋度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_ep().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_FootBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_FootBCC().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_knockback_time:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_knockback_time().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_LastBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_LastBCC().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_sizex 碰撞箱尺寸X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_sizex().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_sizey 碰撞箱尺寸Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_sizey().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_temp_puzzle_max_mp 临时/谜题用魔力值上限:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_temp_puzzle_max_mp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+
+                                GUILayout.BeginHorizontal(GUI.skin.box);
+                                GUILayout.Label("get_temp_puzzle_mp 临时/谜题用魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                try
+                                {
+                                    GUILayout.Label(pr.get_temp_puzzle_mp().ToString());
+                                }
+                                catch
+                                {
+                                    GUILayout.Label("获取出错");
+                                }
+                                GUILayout.EndHorizontal();
+                            }
+
+
                         }
 
-                        // 显示解压进度
-                        Console.Write($"\r解压进度: {currentEntry}/{totalEntries} ({(currentEntry * 100) / totalEntries}%)");
                     }
                 }
 
-                Console.WriteLine("\n解压完成!");
+                GUILayout.EndHorizontal();
             }
-            catch (Exception ex)
+            GUILayout.EndHorizontal();
+
+            
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 控件_MID信息
+            // 在顶部插空白空间
+            GUILayout.Space(50);
+
+            // 设置一个水平布局，用来控制垂直布局的位置
+            GUILayout.BeginHorizontal();
+            // 在左侧插入一个可伸缩的空白空间，使垂直布局水平居中
+            GUILayout.FlexibleSpace();
+            // 设置垂直布局
+            GUILayout.BeginVertical();
+            // 在垂直布局的顶部插入一个可伸缩的空白空间，使内容垂直居中
+            GUILayout.FlexibleSpace();
+
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(100));//竖排
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("隐藏窗口")) // 按钮
             {
-                Console.WriteLine($"\n解压失败: {ex.Message}");
+                showWindow = !showWindow; // 切换窗口显示状态
             }
+            if (GUILayout.Button("游戏官网")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://aliceincradle.dev") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("Mod官网")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://www.xiaomiaoica.wiki/index.php/alice-in-cradle-bepinex-mod/") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("ModGitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod") { UseShellExecute = true });
+            }
+            
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.Label("出现问题可以联系本苗哦~ 作者信息:"); // 文字
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("BiliBili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/1775750067") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("X(Twitter)")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://x.com/XiaoMiao_ICa") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("QQ")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://user.qzone.qq.com/2966095351") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/MiaoluoYuanlina") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("强制关闭游戏")) // 按钮
+            {
+                Process.GetCurrentProcess().Kill();
+            }
+            //if (GUILayout.Button("重启游戏")) // 按钮
+            //{
+            //    Process.Start(Game_directory + "/AliceInCradle.exe", "");
+            //    Process.GetCurrentProcess().Kill();
+            //}
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndHorizontal();
+
+            // 在垂直布局的底部插入一个可伸缩的空白空间
+            GUILayout.FlexibleSpace();
+            // 结束垂直布局
+            GUILayout.EndVertical();
+            // 在右侧插入一个可伸缩的空白空间，使垂直布局水平居中
+            GUILayout.FlexibleSpace();
+            // 结束水平布局
+            GUILayout.EndHorizontal();
+
+            //if (GUILayout.Button("Text")) // 按钮
+            //{
+            //}
+
+
+
+            #endregion
+
+            GUILayout.Space(50);// 在顶部插空白空间
+            GUILayout.EndScrollView();// 结束滚动视图
+            GUI.DragWindow();// 允许拖动窗口  
+            #endregion
         }
-        static void DownloadFile(string fileUrl, string savePath)//下载文件
+
+        public static void SavepreferencesConfig()//保存配置
         {
-            try
+            string currentDirectory = Directory.GetCurrentDirectory();
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic", GUI_Bool_BanMosaic.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic2", GUI_Bool_BanMosaic2.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage", GUI_Bool_NOApplyDamage.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage2", GUI_Bool_NOApplyDamage2.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug", GUI_Bool_ModDebug.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Export_Resources", GUI_Bool_ModDebug_Export_Resources.ToString());
+            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info", GUI_Bool_ModDebug_Noel_info.ToString());
+        }
+
+        IEnumerator SetCustomKey() //更改快捷键
+        {
+            while (!Input.anyKeyDown)
             {
-                using (WebClient client = new WebClient())
+                GUI_string_toggleKey = "请点击键盘上的一个按键 目前快捷键:";
+                yield return null; // 等待用户按下一个键
+            }
+
+            // 获取用户按下的键并保存
+            foreach (KeyCode keyCode in System.Enum.GetValues(typeof(KeyCode)))
+            {
+                if (Input.GetKeyDown(keyCode))
                 {
-                    client.DownloadProgressChanged += (sender, e) =>
+                    toggleKey = keyCode;
+                    PlayerPrefs.SetString("toggleKey", keyCode.ToString());
+                    PlayerPrefs.Save();
+                    Logger.LogInfo("快捷键设置为了: " + keyCode);
+                    GUI_string_toggleKey = "目前快捷键:";
+                    if (keyCode == KeyCode.Mouse0)
                     {
-                        // 格式化单位显示
-                        string received = FormatSize(e.BytesReceived);
-                        string total = e.TotalBytesToReceive > 0 ? FormatSize(e.TotalBytesToReceive) : "未知大小";
+                        toggleKey = KeyCode.Tab;
+                        GUI_string_toggleKey = "此快捷不可用 目前快捷键:";
 
-                        Console.Write($"\r下载进度: {e.ProgressPercentage}% ({received} / {total})");
-                    };
-
-                    client.DownloadFileCompleted += (sender, e) =>
-                    {
-                        Console.WriteLine("\n下载完成!");
-                    };
-
-                    // 开始下载文件
-                    client.DownloadFileAsync(new Uri(fileUrl), savePath);
-
-                    // 防止程序过早退出，等待下载完成
-                    //Console.WriteLine("正在下载，请稍候...");
-                    while (client.IsBusy)
-                    {
-                        System.Threading.Thread.Sleep(100);
                     }
+                    break;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\n下载失败: {ex.Message}");
-            }
         }
-        private static string FormatSize(long bytes)//格式化文件大小格式
-        {
-            const long KB = 1024;
-            const long MB = KB * 1024;
-            const long GB = MB * 1024;
-            const long TB = GB * 1024;
 
-            if (bytes >= TB)
-                return $"{bytes / (double)TB:F2} TB";
-            if (bytes >= GB)
-                return $"{bytes / (double)GB:F2} GB";
-            if (bytes >= MB)
-                return $"{bytes / (double)MB:F2} MB";
-            if (bytes >= KB)
-                return $"{bytes / (double)KB:F2} KB";
-            return $"{bytes} B";
-        }
-        static void CreatePath(string path)//创建目录
+        [HarmonyPatch] // 监听游戏nel.MosaicShower.FnDrawMosaic方法 用于清除马赛克
+        public static class nel_MosaicShower_FnDrawMosaic_Patch
         {
-            try
+            [HarmonyTargetMethod]// 目标
+            static MethodBase TargetMethod()
             {
-                Directory.CreateDirectory(path);
-                //Console.WriteLine($"目录已成功创建: {path}");
+                return AccessTools.Method(typeof(nel.MosaicShower), "FnDrawMosaic", new Type[] {
+                typeof(object).MakeByRefType(),
+                typeof(ProjectionContainer),
+                typeof(Camera)
+                });
             }
-            catch (Exception ex)
+            [HarmonyPrefix]// 前置
+            public static bool Prefix()
             {
-                Console.WriteLine($"创建目录时发生错误: {ex.Message}");
-            }
-        }
-        static void DeletePath(string folderPath)//删除目录
-        {
-            // 判断文件夹是否存在
-            if (Directory.Exists(folderPath))
-            {
-                // 删除文件夹中的所有文件
-                foreach (var file in Directory.GetFiles(folderPath))
+                if (GUI_Bool_BanMosaic == true)
                 {
-                    // 删除单个文件
-                    System.IO.File.Delete(file);
-                }
-                // 删除文件夹中的所有子文件夹
-                foreach (var subDirectory in Directory.GetDirectories(folderPath))
-                {
-                    // 递归调用删除子文件夹
-                    DeletePath(subDirectory);
-                }
-                // 删除文件夹本身
-                Directory.Delete(folderPath);
-            }
-            else
-            {
-                // 如果文件夹不存在，输出提示信息
-                Console.WriteLine("指定的文件夹不存在.");
-            }
-        }
-        static string GetFileMd5(string filePath)//获取文件MD5值
-        {
-            if (!System.IO.File.Exists(filePath))
-                throw new FileNotFoundException("指定的文件不存在", filePath);
-
-            using (var md5 = MD5.Create())
-            using (var stream = System.IO.File.OpenRead(filePath))
-            {
-                byte[] hash = md5.ComputeHash(stream);
-                return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-            }
-        }
-        static string RemoveEmptyLines(string input)//移除文本中的空行
-        {
-            if (string.IsNullOrEmpty(input))
-                return input;
-
-            // 按行拆分，去掉空白行后重新拼接
-            string[] lines = input.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            return string.Join(Environment.NewLine, lines);
-        }
-        static bool ContainsCJKCharacters(string input)//判断字符串是否包含中日韩字符
-        {
-            // 正则表达式，匹配中日韩字符的Unicode范围
-            string pattern = @"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]";
-
-            // 使用正则表达式进行匹配
-            return Regex.IsMatch(input, pattern);
-        }
-        static int GetStringWidth(string str)// 计算字符串的宽度
-        {
-            int width = 0;
-            foreach (char c in str)
-            {
-                // 中文字符宽度为 2，其他字符宽度为 1
-                if (char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.OtherLetter ||
-                    char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.OtherSymbol)
-                {
-                    width += 2;  // 中文、符号等宽度为2
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] nel.MosaicShower.FnDrawMosaic 前置成功命中 拦截此方法执行");
+                    return false;
                 }
                 else
                 {
-                    width += 1;  // 英文字符宽度为1
+                    return true;
                 }
+                return true;
             }
-            return width;
-        }
-        static string GetGitHubDownloadUrl(string url)//获取GitHub下载链接
-        {
-            using (HttpClient client = new HttpClient())
+            [HarmonyPostfix]// 后置
+            public static void Postfix(MosaicShower __instance)
             {
-                // 设置请求头
-                client.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3.raw");
-                client.DefaultRequestHeaders.Add("User-Agent", "C# App"); // GitHub API 需要 User-Agent
-
-                try
+                if (GUI_Bool_NOApplyDamage == true)
                 {
-                    // 发送 GET 请求
-                    HttpResponseMessage response = client.GetAsync(url).Result; 
+                    //UnityEngine.Debug.Log(">>> [XiaoMiaoMod] Prefix 成功命中！");
 
-                    // 如果响应成功，返回最终的 URL
-                    if (response.IsSuccessStatusCode)
+                }
+
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏m2d.M2Attackable.applyHpDamage方法 用于免疫伤害
+        public static class m2d_M2Attackable_applyHpDamage_Patch
+        {
+            [HarmonyTargetMethod]// 目标
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(m2d.M2Attackable), "applyHpDamage", new Type[] {
+                typeof(int),
+                typeof(bool),
+                typeof(AttackInfo)
+                });
+            }
+            [HarmonyPrefix]// 前置
+            public static bool Prefix()
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] m2d.M2Attackable.applyHpDamage 前置成功命中 拦截此方法执行");
+                    return false;
+
+                }
+                return true;
+            }
+            [HarmonyPostfix]// 后置
+            public static void Postfix(MosaicShower __instance)
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] m2d.M2Attackable.applyHpDamage 后置成功命中");
+                }
+
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏nel.M2PrADmg.applyDamage方法 用于不受伤害
+        public static class M2PrADmg_Patch 
+        {
+            // 目标
+            //[HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(nel.M2PrADmg), "applyDamage", new Type[] {
+                typeof(NelAttackInfo),
+                typeof(HITTYPE).MakeByRefType(),
+                typeof(bool),
+                typeof(string),
+                typeof(bool),
+                typeof(bool)
+                });
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                if (GUI_Bool_NOApplyDamage2 == true)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] nel.M2PrADmg.applyDamage方法 前置成功命中 拦截此方法执行");
+                    return false;
+
+                }
+                return true;
+               
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏evt.EV.evStart方法
+        public static class evt_EV_evStart_Patch
+        {
+
+            [HarmonyTargetMethod]// 目标
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(evt.EV), "evStart", new Type[] {
+                });
+            }
+            [HarmonyPrefix]// 前置
+            public static bool Prefix()
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod]  evt.EV.evStart 前置成功命中");
+                }
+                return true;
+            }
+            [HarmonyPostfix]// 后置
+            public static void Postfix(MosaicShower __instance)
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod]  evt.EV.evStart 后置成功命中");
+                }
+
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏nel.M2PrADmg.applyWormTrapDamage方法 用于免疫虫墙
+        public static class nel_M2PrADmg_applyWormTrapDamage_Patch
+        {
+            // 目标
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(nel.M2PrADmg), "applyWormTrapDamage", new Type[] {
+                typeof(NelAttackInfo),
+                typeof(int),
+                typeof(bool)
+                });
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                //if (GUI_Bool_ == true)
+                //{
+                //    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] nel.M2PrADmg.applyWormTrapDamage 前置成功命中");
+                //    return false;
+                //}
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix(NelAttackInfo Atk, int phase_count, bool decline_additional_effect)
+            {
+                //UnityEngine.Debug.Log($">>> [XiaoMiaoMod] Postfix 成功命中！");
+                //UnityEngine.Debug.Log($">>> {Atk}");
+                //UnityEngine.Debug.Log($">>> {phase_count}");
+                //UnityEngine.Debug.Log($">>> {decline_additional_effect}");
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏nel.M2PrADmg.press_damage_state_skip方法 失败后跳过
+        public static class nel_M2PrADmg_press_damage_state_skip_Patch
+        {
+            // 目标
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(nel.M2PrADmg), "press_damage_state_skip");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法 press_damage_state_skip！");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                UnityEngine.Debug.Log(">>> [XiaoMiaoMod] Prefix 成功命中！");
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix(float def_wait_t, float t_state)
+            {
+                UnityEngine.Debug.Log($">>> [XiaoMiaoMod] Postfix 成功命中！");
+                UnityEngine.Debug.Log($">>> {def_wait_t}");
+                UnityEngine.Debug.Log($">>> {t_state}");
+            }
+        }
+
+        [HarmonyPatch] //  监听游戏nel.M2PrADmg.resetFlagsForGameOver方法 失败重置·
+        public static class nel_M2PrADmg_resetFlagsForGameOver_Patch
+        {
+            // 目标
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(nel.M2PrADmg), "resetFlagsForGameOver");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法 resetFlagsForGameOver！请确认方法名拼写。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] m2d.M2Attackable.resetFlagsForGameOver 后置成功命中 游戏识别重新读档");
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 杂鱼~杂鱼~又在看诺艾尔的战败CG~");
+            }
+        }
+
+        [HarmonyPatch] // 多图贴图替换补丁类
+        public static class MultiImagePatchHandler
+        {
+            // Key 是文件名，Value 是贴图对象
+            private static Dictionary<string, Texture2D> _textureCache = new Dictionary<string, Texture2D>();
+
+            // 获取自定义图片的通用方法
+            public static Texture2D GetCustomTexture(string assetName)
+            {
+                if (_textureCache.ContainsKey(assetName)) return _textureCache[assetName];
+
+                string filePath = Path.Combine(Paths.PluginPath, "XiaoMiao_ICa","Resources", assetName);
+
+                if (File.Exists(filePath))
+                {
+                    byte[] data = File.ReadAllBytes(filePath);
+                    Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (UnityEngine.ImageConversion.LoadImage(tex, data))
                     {
-                        return response.RequestMessage.RequestUri.ToString();
+                        tex.name = assetName + "_custom";
+                        _textureCache[assetName] = tex;
+                        XiaoMiaoICaMod.Instance.Logger.LogInfo($">>> [XiaoMiaoMod] 成功加载新图片: " + assetName);
+                        return tex;
                     }
                 }
-                catch (Exception ex)
+                return null;
+            }
+
+            // 统一替换逻辑函数
+            private static void TryReplace(string name, Type type, ref UnityEngine.Object result)
+            {
+                if (XiaoMiaoICaMod.GUI_Bool_BanMosaic2)
                 {
-                    Console.WriteLine($"Error: {ex.Message}");
+                    // 待替换的资源关键字
+                    string[] targetNames = {
+                "title_logo",
+                "key_noel",
+                "__events_restroom.pxls.bytes.texture_0",
+                "__events_2weekattack.pxls.bytes.texture_0"
+            };
+
+                    foreach (string target in targetNames)
+                    {
+                        if (name.ToLower().Contains(target.ToLower()))
+                        {
+                            Texture2D customTex = GetCustomTexture(target);
+                            if (customTex == null) continue;
+
+                            // 自动识别类型替换
+                            if (type == typeof(Texture2D) || result is Texture2D)
+                            {
+                                result = customTex;
+                            }
+                            else if (type == typeof(Sprite) || result is Sprite)
+                            {
+                                // 包装成 Sprite
+                                result = Sprite.Create(customTex,
+                                    new Rect(0, 0, customTex.width, customTex.height),
+                                    new Vector2(0.5f, 0.5f));
+
+                                // 这一步很重要，防止某些脚本通过名字查找资源失败
+                                result.name = target + "_custom_sprite";
+                            }
+                        }
+                    }
                 }
             }
 
-            return null; // 如果失败，返回 null
+            // 拦截同步加载
+            private static readonly string ExportPath = Path.Combine(Paths.GameRootPath, "BepInEx/plugins/XiaoMiao_ICa/ExportedAssets");// ModDebug_资源导出目录
+            [HarmonyPatch(typeof(AssetBundle), "LoadAsset", new Type[] { typeof(string), typeof(Type) })]
+            [HarmonyPostfix]
+            public static void PostfixSync(string name, Type type, ref UnityEngine.Object __result)
+            {
+                
+                if (XiaoMiaoICaMod.GUI_Bool_BanMosaic2)
+                {
+                    TryReplace(name, type, ref __result);
+                }
+                if (GUI_Bool_ModDebug_Export_Resources)
+                {
+                    UnityEngine.Debug.Log("加载加载资源: " + name);
+                    // 1. 基础校验：结果不能为空，且必须是贴图类型
+                    if (__result == null || !(__result is Texture2D tex)) return;
+
+                    try
+                    {
+                        // 2. 确保导出目录存在
+                        if (!Directory.Exists(ExportPath)) Directory.CreateDirectory(ExportPath);
+
+                        // 3. 处理文件名（防止路径字符冲突）
+                        // 有些资源名带路径，如 assets/ui/logo.png，需要把斜杠替换掉
+                        string safeName = name.Replace("/", "_").Replace("\\", "_");
+                        if (string.IsNullOrEmpty(safeName)) safeName = tex.name;
+
+                        string saveFileName = Path.Combine(ExportPath, safeName + ".png");
+
+                        // 4. 如果文件已经导出过，就跳过（避免重复读写卡顿）
+                        if (File.Exists(saveFileName)) return;
+
+                        // 5. 将贴图转为可读状态并导出
+                        // 注意：有些贴图在内存中是不可读的（Read/Write Disabled），直接 Encode 会报错
+                        // 我们需要创建一个临时的可读副本
+                        RenderTexture tmp = RenderTexture.GetTemporary(
+                            tex.width,
+                            tex.height,
+                            0,
+                            RenderTextureFormat.Default,
+                            RenderTextureReadWrite.Linear);
+
+                        Graphics.Blit(tex, tmp);
+                        RenderTexture previous = RenderTexture.active;
+                        RenderTexture.active = tmp;
+
+                        Texture2D readableTex = new Texture2D(tex.width, tex.height);
+                        readableTex.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
+                        readableTex.Apply();
+
+                        RenderTexture.active = previous;
+                        RenderTexture.ReleaseTemporary(tmp);
+
+                        // 6. 写入文件
+                        byte[] bytes = ImageConversion.EncodeToPNG(readableTex);
+                        File.WriteAllBytes(saveFileName, bytes);
+
+                        UnityEngine.Object.Destroy(readableTex); // 及时销毁临时对象，防止内存泄漏
+
+                        UnityEngine.Debug.Log($">>> [AssetDump] 成功导出资源: {saveFileName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        UnityEngine.Debug.LogError($">>> [AssetDump] 导出 {name} 失败: {ex.Message}");
+                    }
+                }
+            }
+
+            // 拦截异步加载
+            [HarmonyPatch(typeof(AssetBundleRequest), "asset", MethodType.Getter)]
+            [HarmonyPostfix]
+            public static void PostfixAsync(AssetBundleRequest __instance, ref UnityEngine.Object __result)
+            {
+                if (__result != null && XiaoMiaoICaMod.GUI_Bool_BanMosaic2)
+                {
+                    TryReplace(__result.name, __result.GetType(), ref __result);
+                }
+            }
         }
-        static void CreateShortcut(string targetPath, string shortcutPath)//创建快捷方式
+
+        [HarmonyPatch(typeof(XX.X), "loadDebug")]//XX.X.loadDebug 补丁类
+        public class Patch_X_LoadDebug
         {
-            // 创建 WScript.Shell 对象
-            var wshShell = new WshShell();
+            public static void GameDeBug(bool i)
+            {
+                SetBool("announce", i);
+                SetBool("timestamp", i);
+            }
 
-            // 创建快捷方式对象
-            IWshShortcut shortcut = (IWshShortcut)wshShell.CreateShortcut(shortcutPath);
+            public static void SetBool(string name, bool value)
+            {
+                var type = typeof(XX.X);
 
-            // 设置快捷方式属性
-            shortcut.TargetPath = targetPath; // 目标路径
-            shortcut.WorkingDirectory = System.IO.Path.GetDirectoryName(targetPath); // 工作目录
-            shortcut.Description = ""; // 快捷方式描述
-            shortcut.IconLocation = targetPath + ", 0"; // 设置快捷方式图标（使用程序的图标）
+                // 优先 DEBUGXXX
+                var field =
+                    type.GetField("DEBUG" + name.ToUpper(),
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? type.GetField(name,
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            // 保存快捷方式
-            shortcut.Save();
+                if (field != null)
+                {
+                    field.SetValue(null, value);
+                }
+            }
         }
-        static bool ExportEmbedResources(string FileName, string Path) // 导出嵌入资源
+        
+
+
+
+        /// <summary>
+        /// 导出切入资源
+        /// </summary>
+        /// <param name="FileName"></param>
+        /// <param name="Path"></param>
+        /// <returns></returns>
+        public bool ExportEmbedResources(string FileName, string Path) // 导出嵌入资源
         {
             try
             {
@@ -506,7 +1472,7 @@ namespace installer_Mod
                 Assembly assembly = Assembly.GetExecutingAssembly();
 
                 // 构造嵌入资源的完整名称
-                string resourceName = $"installer_Mod.{FileName}";
+                string resourceName = $"{FileName}";
 
                 // 检查资源是否存在
                 using (Stream resourceStream = assembly.GetManifestResourceStream(resourceName))
@@ -534,656 +1500,429 @@ namespace installer_Mod
                 return false;
             }
         }
-        static int LOG_GetNewIdAsync()//申请新的日志ID
+    }
+
+
+    public class Mod_Noel
+    {
+        /// <summary>
+        /// 获取玩家对象
+        /// </summary>
+        /// <returns>无返回</returns>
+        public static GameObject FindPlayer()//获取玩家
+        {
+            GameObject player = GameObject.Find("Noel");
+            if (player == null)
+            {
+                return null;
+            }
+            return player;
+        }
+
+        /// <summary>
+        /// 设置生命值
+        /// </summary>
+        /// <param name="HP">第一个数</param>
+        /// <param name="玩家对象(可选)">第二个数</param>
+        /// <returns>返回bool</returns>
+        public static bool SetHp(int HP, GameObject player = null)//设置生命值
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+            if (player == null)
+            {
+                return false;
+            }
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            if (pr != null)
+            {
+                pr.debugSetHp(HP);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 设置魔力值
+        /// </summary>
+        /// <param name="MP">第一个数</param>
+        /// <param name="玩家对象(可选)">第二个数</param>
+        /// <returns>返回bool</returns>
+        public static bool SetMp(int MP, GameObject player = null)//设置魔力值
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+            if (player == null)
+            {
+                return false;
+            }
+            PRNoel pr = player.GetComponent<PRNoel>();
+            if (pr != null)
+            {
+                pr.debugSetMp(MP);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 设置生命中为最大
+        /// </summary>
+        /// <returns>返回bool</returns>
+        public static bool SetHpMax(GameObject player = null)//生命值回满
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+            if (player == null)
+            {
+                return false;
+            }
+            PRNoel pr = player.GetComponent<PRNoel>();
+            if (pr != null)
+            {
+                pr.debugSetHp(GetHP());
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 设置生命中为最大
+        /// </summary>
+        /// <returns>返回bool</returns>
+        public static bool SetMpMax(GameObject player = null)//魔力值回满
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+            if (player == null)
+            {
+                return false;
+            }
+            PRNoel pr = player.GetComponent<PRNoel>();
+            if (pr != null)
+            {
+                pr.debugSetMp(GetMP());
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 获取当前MP
+        /// </summary>
+        /// <returns>返回当前MP</returns>
+        public static int GetMP(GameObject player = null)//获取魔力
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            return (int)pr.get_hp();
+        }
+
+        /// <summary>
+        /// 获取当前HP
+        /// </summary>
+        /// <returns>返回当前HP</returns>
+        public static int GetHP(GameObject player = null)//获取魔力
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            return (int)pr.get_hp();
+        }
+
+        /// <summary>
+        /// 获取当前最多MP
+        /// </summary>
+        /// <returns>返回当前最多MP</returns>
+        public static int GetMaxMP(GameObject player = null)//获取最大魔力
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            return (int)pr.get_maxhp();
+        }
+
+        /// <summary>
+        /// 获取当前最多MP
+        /// </summary>
+        /// <returns>返回当前最多MP</returns>
+        public static int GetManHP(GameObject player = null)//获取最大生命
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            return (int)pr.get_maxhp();
+        }
+
+        /// <summary>
+        /// 设置金币
+        /// </summary>
+        /// <returns>无</returns>
+        public static void SetMoney(int desiredCoinAmount)
+        {
+            // 通过 addCount 方法增加金币
+            // 在这个示例中，我们先计算需要增加的金币数
+            int currentGold = 0;
+            currentGold = (int)nel.CoinStorage.getCount(CoinStorage.CTYPE.GOLD);
+            int amountToAdd = desiredCoinAmount - currentGold;
+
+            // 使用 addCount 方法增加金币数量
+            if (amountToAdd > 0)
+            {
+                nel.CoinStorage.addCount(amountToAdd, nel.CoinStorage.CTYPE.GOLD);
+            }
+            else if (amountToAdd < 0)
+            {
+                nel.CoinStorage.reduceCount(-amountToAdd, nel.CoinStorage.CTYPE.GOLD);
+
+            }
+        }
+
+        public static int test(GameObject player = null)
+        {
+            if (player == null)
+            {
+                player = FindPlayer();
+            }
+
+
+            PRNoel pr = player.GetComponent<PRNoel>();
+            return (int)0;
+        }
+
+    }
+
+    
+    public class EventEditor
+    {
+        public class RequestDto
+        {
+            public string Command { get; set; }
+            public int Value { get; set; }
+        }
+
+        public class ResponseDto
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; }
+        }
+
+
+        public bool Send(string Objective,string text)
+        {
+
+            using (var client = new NamedPipeClientStream(
+                ".",
+                Objective,
+                PipeDirection.InOut))
+            {
+                client.Connect(3000);
+
+                using (var reader = new StreamReader(client))
+                using (var writer = new StreamWriter(client))
+                {
+                    writer.AutoFlush = true;
+
+                    var req = new RequestDto
+                    {
+                        Command = text,
+                        Value = 123
+                    };
+                    string json = JsonConvert.SerializeObject(req);
+                    writer.WriteLine(json);
+
+                    string resp = reader.ReadLine();
+                    Console.WriteLine("返回：" + resp);
+                }
+            }
+
+
+
+            return true;
+        }
+
+        public void run_HaLua(string text)
+        {
+            Thread.Sleep(100);
+            try
+            {
+
+                // 1 缓存到 EV.Oevt_content（使用反射，保证能访问私有字段）
+                var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
+                evtContent[text] = text;
+                Thread.Sleep(100);
+                // 2 创建事件读取器并解析执行
+                EvReader ER = new EvReader(text, 0, null, null);
+                ER.parseText(text);
+                EV.stackReader(ER, -1);
+
+                UnityEngine.Debug.Log("[CMDExecutor] 脚本执行完成: " + text);
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError("[CMDExecutor] 执行脚本出错: " + ex);
+            }
+        }
+
+
+        public class DataJson
+        {
+            public string Type { get; set; }
+            public string Text { get; set; }
+            public int Pid { get; set; }
+            public string Objective { get; set; }
+        }
+
+
+        public bool Receive(string Objective)
+        {
+            Console.WriteLine("服务端启动：" + Objective);
+
+            while (true)
+            {
+                using (var server = new NamedPipeServerStream(
+                    Objective,
+                    PipeDirection.InOut,
+                    1,
+                    PipeTransmissionMode.Message))
+                {
+                    server.WaitForConnection();
+
+                    using (var reader = new StreamReader(server))
+                    using (var writer = new StreamWriter(server))
+                    {
+                        writer.AutoFlush = true;
+
+                        string json = reader.ReadLine();
+
+                        var req = JsonConvert.DeserializeObject<RequestDto>(json);
+
+                        Console.WriteLine("收到命令：" + req.Command);
+
+                        DataJson Json = JsonConvert.DeserializeObject<DataJson>(req.Command);
+
+                        if (Json.Type == "EventEditor_Text")
+                        {
+                            Console.WriteLine("返回编辑器内容：\n" + Json.Text);
+                            run_HaLua(Json.Text);
+                        }
+
+                        var resp = new ResponseDto
+                        {
+                            Success = true,
+                            Message = "处理完成"
+                        };
+
+                        writer.WriteLine(JsonConvert.SerializeObject(resp));
+                    }
+                }
+            }
+
+            return true;
+        }
+
+
+    }
+
+    public static class M_EF    //Extended functionality
+    {
+        /// <summary>
+        /// 写入配置文件
+        /// </summary>
+        /// <param name="filePath">配置文件路径</param>
+        /// <param name="configName">配置项名称</param>
+        /// <param name="content">配置内容</param>
+        /// <returns>操作是否成功</returns>
+        public static bool Config_Write(string filePath, string configName, string content)
+        {
+            
+            
+            try
+            {
+                Dictionary<string, string> configDict;
+
+                // 创建目录（如果不存在）
+                string directory = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(directory) && !string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                // 读取现有配置
+                if (File.Exists(filePath))
+                {
+                    string existingJson = File.ReadAllText(filePath);
+                    configDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(existingJson)
+                               ?? new Dictionary<string, string>();
+                }
+                else
+                {
+                    configDict = new Dictionary<string, string>();
+                }
+
+                // 更新配置项
+                configDict[configName] = content;
+
+                // 写入文件
+                string newJson = JsonConvert.SerializeObject(configDict, Formatting.Indented);
+                File.WriteAllText(filePath, newJson);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 读取配置文件
+        /// </summary>
+        /// <param name="filePath">配置文件路径</param>
+        /// <param name="configName">配置项名称</param>
+        /// <returns>配置内容（失败返回null）</returns>
+        public static string Config_Read(string filePath, string configName)
         {
             try
             {
-                return Task.Run(async () =>
-                {
-                    string url = $"{_baseUrl}?action=get_id";
-                    string response = await client.GetStringAsync(url);
-                    dynamic result = JsonConvert.DeserializeObject<dynamic>(response);
+                if (!File.Exists(filePath)) return null;
 
-                    if (result.status == "success")
-                    {
-                        return int.Parse((string)result.id);
-                    }
-                    else
-                    {
-                        throw new Exception($"申请 ID 失败: {result.message}");
-                    }
-                }).GetAwaiter().GetResult();
+                string json = File.ReadAllText(filePath);
+                Dictionary<string, string> configDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+
+                return configDict != null && configDict.TryGetValue(configName, out string value)
+                       ? value
+                       : null;
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Error: {ex.Message}");
-                return -1; 
+                return null;
             }
+
         }
-        static async Task<bool> LOG_SubmitTextAsync(string id, string text)//提交日志文本
-        {
-            const int maxRetries = 3;
-            const int timeoutSeconds = 10;
 
-            for (int attempt = 1; attempt <= maxRetries; attempt++)
-            {
-                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)))
-                {
-                    try
-                    {
-                        string url = $"{_baseUrl}?action=submit";
-
-                        var values = new Dictionary<string, string>
-                {
-                    { "id", id },
-                    { "text", text }
-                };
-
-                        using (var content = new FormUrlEncodedContent(values))
-                        {
-                            HttpResponseMessage response =
-                                await client.PostAsync(url, content, cts.Token);
-
-                            string responseString =
-                                await response.Content.ReadAsStringAsync();
-
-                            if (!response.IsSuccessStatusCode)
-                            {
-                                Console.WriteLine(
-                                    $"第 {attempt} 次尝试 - HTTP {(int)response.StatusCode} 错误，ID: {id}"
-                                );
-                                continue;
-                            }
-
-                            dynamic result;
-                            try
-                            {
-                                result = JsonConvert.DeserializeObject<dynamic>(responseString);
-                            }
-                            catch
-                            {
-                                Console.WriteLine(
-                                    $"第 {attempt} 次尝试 - JSON 解析失败，ID: {id}"
-                                );
-                                continue;
-                            }
-
-                            string status = result?.status?.ToString();
-                            string message = result?.message?.ToString() ?? "未知错误";
-
-                            if (status == "success")
-                                return true;
-
-                            Console.WriteLine(
-                                $"第 {attempt} 次尝试 - 业务失败: {message}, ID: {id}"
-                            );
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        Console.WriteLine(
-                            $"第 {attempt} 次尝试 - 请求超时（>{timeoutSeconds}s），ID: {id}"
-                        );
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        Console.WriteLine(
-                            $"第 {attempt} 次尝试 - 网络错误: {ex.Message}, ID: {id}"
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(
-                            $"第 {attempt} 次尝试 - 未知异常: {ex.Message}, ID: {id}"
-                        );
-                    }
-
-                    if (attempt < maxRetries)
-                    {
-                        await Task.Delay(200 * attempt);
-                    }
-                }
-            }
-
-            Console.WriteLine($"LOG 提交失败（重试 {maxRetries} 次），ID: {id}");
-            return false;
-        }
-        static async Task Main(string[] args)//主
-        {
-            #region Text
-            if (false)
-            {
-                abort(999);
-
-            }
-
-            #endregion
-            #region 变量定义
-            Program program = new Program();
-            #endregion
-            #region 启动参数
-            bool start_DownloadGame = false;
-            string start_Path = "";
-            bool start_ExportEmbed_Mod = false;
-            bool start_ExportEmbed_BepEx = false;
-            string DownloadGameFileName = "CN_HgV1znzi_Win_ver027h.zip";
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] == "--Path")//路径
-                {
-                    start_Path = args[i + 1];
-                    i++;
-                }
-                else if (args[i] == "-DownloadGame")//下载游戏
-                {
-                    start_DownloadGame = true;
-                }
-                else if (args[i] == "-ExportEmbed_Mod")//导出切入资源
-                {
-                    start_ExportEmbed_Mod = true;
-                }
-                else if (args[i] == "-ExportEmbed_BepEx")//导出切入资源
-                {
-                    start_ExportEmbed_BepEx = true;
-
-                } 
-                else if (args[i] == "--DownloadGameFileName")
-                {
-                    DownloadGameFileName = args[i + 1];
-                    i++;
-                }
-
-            }
-            #endregion
-            #region 声明
-            string[] lines = {
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "Py：XiaoMiao_ICa or 苗萝缘莉雫",
-            "GPL-3.0 开源许可",
-            "适用于 Alice In Cradle 的 bepinex 框架Mod一键安装程序",//10
-            "理论适配游戏全部版本！",
-            "本程序仅供学习参考 GitHub项目:repo:MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod",
-            "Ciallo～(∠・ω< )⌒☆​",
-            "Mod及游戏本体都是免费的，如果你是购买而来，证明你被骗啦~",
-            "本程序会收集你的日志来更好的维护，如果您不同意，请立即关闭此程序。",
-            "",
-            "MOD官网：https://xiaomiaoica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/",
-            "GitHub项目:https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod",
-            "原游戏官网:https://aliceincradle.com/",
-            "",//20
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""//30
-            };
-            ConsoleColor[] colors = {
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.DarkBlue,
-            ConsoleColor.DarkGreen,
-            ConsoleColor.Blue,//10
-            ConsoleColor.White,
-            ConsoleColor.Yellow,
-            ConsoleColor.White,
-            ConsoleColor.DarkMagenta,
-            ConsoleColor.DarkRed,
-            ConsoleColor.White,
-            ConsoleColor.DarkYellow,
-            ConsoleColor.DarkYellow,
-            ConsoleColor.Magenta,
-            ConsoleColor.White,//20
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White,
-            ConsoleColor.White//30
-            };
-            // 获取终端窗口的宽度
-            int consoleWidth = Console.WindowWidth;
-            // 遍历每一行文本
-            foreach (string line in lines)
-            {
-                int lineWidth = GetStringWidth(line);
-                int startPosition = (consoleWidth - lineWidth) / 2;
-                Console.ForegroundColor = colors[Array.IndexOf(lines, line)];
-                Console.SetCursorPosition(startPosition, Console.CursorTop);
-                Console.WriteLine(line);
-                Console.ResetColor();
-            }
-            for (int i = 0; i < 5; i++)
-            {
-
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.Write(""+(5-i)+"秒后开始运行");
-                Thread.Sleep(1000); // 等待
-            }
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.Write("               ");
-            for (int i = 0; i < 30; i++)
-            {
-                //Console.WriteLine("\n");
-            }
-            #endregion
-            #region 下载游戏
-            WriteLine_color("\n程序运行目录" + Directory.GetCurrentDirectory(), ConsoleColor.Cyan);//显示程序运行目录
-            CreatePath(Directory.GetCurrentDirectory() + "/Temp");//创建Temp文件夹
-            LOG_ID = LOG_GetNewIdAsync();
-            WriteLine_color("\n本次运行分配了ID" + LOG_ID, ConsoleColor.Cyan);
-            if (start_DownloadGame == true)
-            {
-                WriteLine_color("尝试下载游戏本体......", ConsoleColor.Blue);
-                //CN_HgV1znzi_Win_ver027h
-                string URL_FILE_NAME = DownloadGameFileName;
-                string GAME_V = "027";
-                WriteLine_color("目前尝试下载版本:"+ URL_FILE_NAME, ConsoleColor.Blue);
-
-
-                for (int i = 1; i <= 9; i++)
-                {
-                    WriteLine_color("尝试使用官方 CDN0" + i + " 进行下载。", ConsoleColor.Blue);
-                    DownloadFile("https://minazuki.shiro.dev/d/CN0"+ i +"/AliceInCradle_Latest/" + URL_FILE_NAME, Directory.GetCurrentDirectory() + "/Temp/" + URL_FILE_NAME);
-                    FileInfo fileInfo = new FileInfo(Directory.GetCurrentDirectory() + "/Temp/" + URL_FILE_NAME);
-                    WriteLine_color("官方 CDN0" + i + " 不可用。", ConsoleColor.Yellow);
-
-
-                    if (fileInfo.Length >= 1024 * 1024)
-                    {
-                        break;
-                    }
-
-                    string fileContent = System.IO.File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Temp", URL_FILE_NAME));
-                    WriteLine_color("URL返回内容：", ConsoleColor.Yellow);
-                    WriteLine_color(fileContent, ConsoleColor.Yellow);
-
-                    if (i == 9)
-                    {
-                        abort(13);//无可用的 CDN 
-                    }
-                }
-
-                
-
-
-
-                if (System.IO.File.Exists(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME))
-                {
-                    WriteLine_color("下载成功！", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(9);
-                    WriteLine_color("下载游戏本体失败！", ConsoleColor.Red);
-                }
-
-
-                CreatePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
-                WriteLine_color("解压游戏......", ConsoleColor.Blue);
-                ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/"+ URL_FILE_NAME, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle");
-                start_Path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Local/Alice in Cradle/Win ver"+ GAME_V + "/AliceInCradle_ver" + GAME_V+ "/AliceInCradle.exe";
-                if (System.IO.File.Exists(start_Path))
-                {
-                    WriteLine_color("解压成功！", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(10);
-                    WriteLine_color("解压游戏本体失败！", ConsoleColor.Red);
-                }
-                CreateShortcut(start_Path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Desktop/Alice In Cradle.lnk");
-                CreateShortcut(start_Path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Alice In Cradle.lnk");
-                
-                WriteLine_color(start_Path, ConsoleColor.DarkCyan);
-            }
-            #endregion
-            #region 获取进程
-            int Game_pid = 0;
-            int while_a = 49;
-            string Gmae_Path_incomplete = "";
-            string Gmae_Path = "";
-            if (start_Path == "")
-            {
-                while (true)
-                {
-                    Game_pid = Name_Get_PID("AliceInCradle"); // 查找进程
-                    if (Game_pid != 0)
-                    {
-                        Console.WriteLine("\n");
-                        WriteLine_color("GamePID: " + Game_pid, ConsoleColor.Blue);
-                        Gmae_Path_incomplete = Pid_Get_Path(Game_pid);
-                        Gmae_Path = Get_Parent_Directory(Gmae_Path_incomplete);
-                        WriteLine_color("GmaePath " + Gmae_Path_incomplete, ConsoleColor.Blue);
-                        Kill_Pid(Game_pid); // 结束进程
-                        break; // 找到进程，退出循环
-                    }
-                    while_a = while_a + 1;
-                    if (while_a >= 30)
-                    {
-                        while_a = 0;
-                        Console.SetCursorPosition(0, Console.CursorTop);
-
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Write($"游戏未运行，请开启游戏！");
-                        Console.ResetColor();
-                    }
-                    if (while_a == 20)
-                    {
-                        Console.SetCursorPosition(0, Console.CursorTop);
-
-                        Console.ForegroundColor = ConsoleColor.Magenta;
-                        Console.Write($"游戏未运行，请开启游戏！");
-                        Console.ResetColor();
-                    }
-                    if (while_a == 10)
-                    {
-                        Console.SetCursorPosition(0, Console.CursorTop);
-
-                        Console.ForegroundColor = ConsoleColor.DarkCyan;
-                        Console.Write($"游戏未运行，请开启游戏！");
-                        Console.ResetColor();
-                    }
-                    Thread.Sleep(100); // 等待
-                }
-                if (ContainsCJKCharacters(Gmae_Path) == true)
-                {
-                    abort(5);
-                }
-            }else{
-                Gmae_Path_incomplete = start_Path;
-                Gmae_Path = Get_Parent_Directory(Gmae_Path_incomplete);
-                WriteLine_color("GamePID: " + Game_pid, ConsoleColor.Blue);
-                WriteLine_color("GmaePath " + Gmae_Path_incomplete, ConsoleColor.Blue);
-            }
-            
-            #endregion
-            #region 动态获取URL
-            WriteLine_color("检查本苗服务器可用性......", ConsoleColor.Blue);
-            #region 测试延迟
-            double URL_delay = 0;
-            if (start_ExportEmbed_BepEx == false && start_ExportEmbed_Mod == false)
-            {
-                
-                for (int i = 0; i < 3; i++)
-                {
-                    Thread.Sleep(300);
-                    double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiaoica.wiki");
-                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                    if (responseTime >= 0)
-                    {
-                        URL_delay = URL_delay + responseTime;
-                    }
-                    else
-                    {
-                        abort(1);
-                        break; // 发生错误时退出循环
-                    }
-                }
-                if (URL_delay != -1)
-                {
-                    URL_delay = URL_delay / 3;
-                }
-                if (URL_delay < 8000 && URL_delay != 0)
-                {
-                    WriteLine_color("检测本苗服务器可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-                }
-                else
-                {
-                    WriteLine_color("本苗服务器不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Red);
-                    abort(2);
-                }
-            }
-            string download_url_BepEx = program.ONLINE_DOWNLOAD_URL_BEPEX;
-            string MD5_BepEx = program.ONLINE_MD5_BEPEX;
-            string download_url_Mod_downloadText = program.ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT;
-            string MD5_url_Mod = program.ONLINE_MD5_URL_MOD;
-            string agentURL_Mod = "";
-            if (start_ExportEmbed_BepEx == false)
-            {
-                URL_delay = 0;
-                WriteLine_color("检查github官网可用性......", ConsoleColor.Blue);
-                for (int i = 0; i < 3; i++)
-                {
-                    Thread.Sleep(300);
-                    double responseTime = await GetUrlResponseTimeAsync("https://miaoluoyuanlina.github.io");
-                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                    if (responseTime >= 0)
-                    {
-                        URL_delay = URL_delay + responseTime;
-                    }
-                    else
-                    {
-                        URL_delay = -1;
-                        break; // 发生错误时退出循环
-                    }
-                }
-                if (URL_delay != -1)
-                {
-                    URL_delay = URL_delay / 3;
-                }
-                if (URL_delay < 5000 && URL_delay != -1)
-                {
-                    WriteLine_color("github官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-                }
-                else
-                {
-                    URL_delay = 0;
-                    WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
-                    WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    agentURL_Mod = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=";
-                    download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
-                    MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
-
-                }
-            }
-            if (start_ExportEmbed_Mod == false)
-            {
-                URL_delay = 0;
-                WriteLine_color("检查BepEx官网可用性......", ConsoleColor.Blue);
-                for (int i = 0; i < 3; i++)
-                {
-                    Thread.Sleep(300);
-                    double responseTime = await GetUrlResponseTimeAsync("https://builds.bepinex.dev");
-                    WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
-                    if (responseTime >= 0)
-                    {
-                        URL_delay = URL_delay + responseTime;
-                    }
-                    else
-                    {
-                        URL_delay = 99999;
-                        break; // 发生错误时退出循环
-                    }
-                }
-                if (URL_delay != -1)
-                {
-                    URL_delay = URL_delay / 3;
-                }
-                if (URL_delay < 5000 && URL_delay != -1)
-                {
-                    WriteLine_color("BepEx官网可用! 平均延迟：" + URL_delay, ConsoleColor.Blue);
-                }
-                else
-                {
-                    WriteLine_color("BepEx官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
-                    WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    download_url_BepEx = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=" + download_url_BepEx;
-                }
-            }
-            #endregion
-            #region URL获取
-            string MD5_Mod = "";
-            string download_url_Mod = "";
-            if (start_ExportEmbed_Mod == false)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    MD5_Mod = GetUrlTxt(MD5_url_Mod);
-                    //Console.WriteLine(MD5_Mod.Contains("发生错误："));
-                    if (MD5_Mod.Contains("发生错误：") == false)
-                    {
-                        break;
-                    }
-                    if (i == 2)
-                    {
-                        WriteLine_color("动态获取MD5失败", ConsoleColor.Red);
-                        abort(6);
-                    }
-                }
-                for (int i = 0; i < 3; i++)
-                {
-                    download_url_Mod = agentURL_Mod + GetUrlTxt(download_url_Mod_downloadText);
-                    download_url_Mod = GetUrlTxt(download_url_Mod_downloadText);
-                    //Console.WriteLine(MD5_Mod.Contains("发生错误："));
-                    if (download_url_Mod.Contains("发生错误：") == false)
-                    {
-                        break;
-                    }
-                    if (i == 2)
-                    {
-                        WriteLine_color("获取Mod下载链接失败！", ConsoleColor.Red);
-                        abort(7);
-                    }
-                }
-                MD5_Mod = RemoveEmptyLines(MD5_Mod);
-                download_url_Mod = RemoveEmptyLines(download_url_Mod);
-            }
-            else
-            {
-                MD5_Mod = program.OFFLINE_MOD_MOD5;
-                MD5_Mod = RemoveEmptyLines(MD5_Mod); 
-
-            }
-            if (start_ExportEmbed_BepEx == false) { } else
-            {
-                MD5_BepEx = program.OFFLINE_BPEEX_MOD5;
-                MD5_BepEx = RemoveEmptyLines(MD5_BepEx);
-            }
-            WriteLine_color("分配的URL信息", ConsoleColor.Cyan);
-            WriteLine_color("download_url_BepEx:" + download_url_BepEx, ConsoleColor.Cyan);
-            WriteLine_color("MD5_BepEx:" + MD5_BepEx, ConsoleColor.Cyan);
-            WriteLine_color("download_url_Mod:" + download_url_Mod, ConsoleColor.Cyan);
-            WriteLine_color("MD5_Mod:" + MD5_Mod, ConsoleColor.Cyan);
-            #endregion
-            #endregion
-            #region 安装mod
-            if (start_ExportEmbed_BepEx == false)
-            {
-                DownloadFile(download_url_BepEx, Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//下载BepEx 
-                string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
-                WriteLine_color("下载文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
-                if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
-                {
-                    WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(3);
-                    WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
-                }
-            }//BepEx
-            else
-            {
-                CreatePath(Directory.GetCurrentDirectory() + "/Temp");
-                if (ExportEmbedResources("file.BepInEx-Unity.Mono-win-x64-6.0.0-be.752+dd0655f.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
-                {
-                    WriteLine_color("BepExMD5导出成功！", ConsoleColor.Blue);
-                }
-                else
-                {
-                    WriteLine_color("BepExMD5导出失败。", ConsoleColor.Red);
-                    abort(11);
-                }
-                string Downloaded_BepExMD5 = GetFileMd5(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip");//获取下载BepEx文件的MD5
-                WriteLine_color("导出文件的MD5哈希值:" + Downloaded_BepExMD5, ConsoleColor.Blue);
-                if (string.Equals(MD5_BepEx, Downloaded_BepExMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
-                {
-                    WriteLine_color("BepExMD5哈希验证成功。", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(3);
-                    WriteLine_color("BepExMD5哈希验证失败。", ConsoleColor.Red);
-                }
-            }
-            ExtractZipWithProgress(Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip", Gmae_Path);//解压BepEx
-            CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");//创建BepEx的Mod文件夹
-            if (start_ExportEmbed_Mod == false)
-            {
-                WriteLine_color("正在尝试解析的下载github地址......", ConsoleColor.Blue);
-                string Git_download_url_Mod = GetGitHubDownloadUrl(download_url_Mod);
-                //Console.WriteLine("A "+ download_url_Mod);
-                //Console.WriteLine("B "+ Git_download_url_Mod);
-                if (Git_download_url_Mod == null)
-                {
-                    abort(8);
-                    WriteLine_color("解析GitHub链接失败", ConsoleColor.Red);
-                }
-                WriteLine_color("解析到的下载地址:" + Git_download_url_Mod, ConsoleColor.Blue);
-                DownloadFile(Git_download_url_Mod, Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//下载Mod
-                string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
-                WriteLine_color("下载文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
-                if (string.Equals(MD5_Mod, Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
-                {
-                    WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(4);
-                    WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
-                }
-            }//MOD
-            else
-            {
-                CreatePath(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa");
-                if (ExportEmbedResources("file.AliceInCradle_Miao_Mod_Dll.dll", Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll"))
-                {
-                    Console.WriteLine("MOD导出成功！");
-                }
-                else
-                {
-                    abort(12);
-                    Console.WriteLine("MOD导出失败。");
-                }
-                string Downloaded_ModMD5 = GetFileMd5(Gmae_Path + "/BepInEx/plugins/XiaoMiao_ICa/XiaoMiaoICa_AIC_Mod.dll");//获取下载mod文件的MD5
-                WriteLine_color("导出文件的MD5哈希值:" + Downloaded_ModMD5, ConsoleColor.Blue);
-                
-                if (string.Equals(RemoveEmptyLines(program.OFFLINE_MOD_MOD5), Downloaded_ModMD5, StringComparison.OrdinalIgnoreCase))//判断MD5
-                {
-                    WriteLine_color("ModMD5哈希验证成功。", ConsoleColor.Blue);
-                }
-                else
-                {
-                    abort(4);
-                    WriteLine_color("ModMD5哈希验证失败。", ConsoleColor.Red);
-                }
-            } 
-            #endregion
-            Process.Start(Gmae_Path_incomplete);//启动游戏
-            Thread.Sleep(10000);
-            abort(0);//结束程序
-        }
     }
 }
