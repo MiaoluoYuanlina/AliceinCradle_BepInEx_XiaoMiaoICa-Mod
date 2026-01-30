@@ -2,7 +2,6 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.Mono;
-using BepInEx.Unity.Mono;
 //游戏dll引用
 using evt;//unsafeAssem.dll
 using HarmonyLib;
@@ -16,12 +15,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO;
-using System.IO.Pipes;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net.NetworkInformation;
-using System.Reflection;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Policy;
@@ -29,11 +25,9 @@ using System.Text;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
-using UnityEngine;
 using UnityEngine;
 using UnityEngine.UI; 
 using XX;
@@ -140,10 +134,9 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Process currentProcess = Process.GetCurrentProcess();
             Game_PID = currentProcess.Id;
             // 获取当前目录
-            string currentDirectory = Directory.GetCurrentDirectory();
-            Game_directory = currentDirectory;
+            Game_directory = Directory.GetCurrentDirectory();
             // 组合路径
-            string path = Path.Combine(currentDirectory, "XiaoMiaoICa_Mod_Data");
+            string path = Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data");
             Logger.LogMessage(path);
             // 检查文件夹是否存在
             if (!Directory.Exists(path))
@@ -278,6 +271,27 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             {
                 GUI_Bool_ModDebug_Noel_info = true;
             }
+
+            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            //{
+            //    GUI_Bool_ModDebug_Noel_info = true;
+            //}
+            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            //{
+            //    GUI_Bool_ModDebug_Noel_info = true;
+            //}
+            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            //{
+            //    GUI_Bool_ModDebug_Noel_info = true;
+            //}
+            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            //{
+            //    GUI_Bool_ModDebug_Noel_info = true;
+            //}
+            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
+            //{
+            //    GUI_Bool_ModDebug_Noel_info = true;
+            //}
             #endregion
         }
         
@@ -488,13 +502,21 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             if (GUILayout.Button("启用该功能")) // 按钮
             {
                 Patch_X_LoadDebug.GameDeBug (true);
-                GUI_string_Debug = "重新读档才能生效！";
+                new EventEditor().run_HaLua(@"
+TX_BOARD <<<EOF 
+<c6>你想要返回主页面重新读档才能生效！
+EOF;
+");
 
             }
             if (GUILayout.Button("关闭该功能")) // 按钮
             {
                 Patch_X_LoadDebug.GameDeBug (false);
-                GUI_string_Debug = "重新读档才能生效！";
+                new EventEditor().run_HaLua(@"
+TX_BOARD <<<EOF 
+<c6>你想要返回主页面重新读档才能生效！
+EOF;
+");
             }
             //if (GUILayout.Button("打开/关闭 GUI F7")) // 按钮
             //{
@@ -510,80 +532,50 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             GUILayout.Label("启用后点击F7开启关闭GUI！");
             GUILayout.Label(GUI_string_Debug, style);
             GUILayout.EndHorizontal();
-            GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
-                "\n╔< 汉化栏" +
-                "\n╠══╦⇒ ? ↴ " +
-                "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
-                "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
-                "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
-                "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
-                "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
-                "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
-                "\n╟    ╚═⇒ seed ⇄ 种子" +
-                "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
-                "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
-                "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
-                "\n╟    ╠═⇒ pos ⇄ 坐标" +
-                "\n╟    ╚══> 右边的敌队生物翻译一样。" +
-                "\n╠══╦⇒ item ⇄ 物品" +
-                "\n╟    ╠═⇒ Grade ⇄ 数量" +
-                "\n╟    ╠═⇒ Money ⇄ 钱币" +
-                "\n╟    ╠═⇒ All ⇄ 全部物品" +
-                "\n╟    ╠═⇒ CURE ⇄ 治疗" +
-                "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
-                "\n╟    ╠═⇒ MTR ⇄ 材料" +
-                "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
-                "\n╟    ╠═⇒ WATER ⇄ 水" +
-                "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
-                "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
-                "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
-                "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
-                "\n╟    ╠═⇒ TOOL ⇄ 工具" +
-                "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
-                "\n╟    ╠═⇒ SKILL ⇄ 技能" +
-                "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
-                "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
-                "\n⇓" +
-                "\n待更新");
+            //GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
+            //    "\n╔< 汉化栏" +
+            //    "\n╠══╦⇒ ? ↴ " +
+            //    "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
+            //    "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
+            //    "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
+            //    "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
+            //    "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
+            //    "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
+            //    "\n╟    ╚═⇒ seed ⇄ 种子" +
+            //    "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
+            //    "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
+            //    "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
+            //    "\n╟    ╠═⇒ pos ⇄ 坐标" +
+            //    "\n╟    ╚══> 右边的敌队生物翻译一样。" +
+            //    "\n╠══╦⇒ item ⇄ 物品" +
+            //    "\n╟    ╠═⇒ Grade ⇄ 数量" +
+            //    "\n╟    ╠═⇒ Money ⇄ 钱币" +
+            //    "\n╟    ╠═⇒ All ⇄ 全部物品" +
+            //    "\n╟    ╠═⇒ CURE ⇄ 治疗" +
+            //    "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
+            //    "\n╟    ╠═⇒ MTR ⇄ 材料" +
+            //    "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
+            //    "\n╟    ╠═⇒ WATER ⇄ 水" +
+            //    "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
+            //    "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
+            //    "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
+            //    "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
+            //    "\n╟    ╠═⇒ TOOL ⇄ 工具" +
+            //    "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
+            //    "\n╟    ╠═⇒ SKILL ⇄ 技能" +
+            //    "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
+            //    "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
+            //    "\n⇓" +
+            //    "\n待更新");
             GUILayout.EndHorizontal();
             #endregion
 
-            #region debug
+            #region 事件管理器
 
             GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.BeginHorizontal();//横排
-
-            GUILayout.Label("使用什么浏览器启动"); 
-            if (GUILayout.Button("Google Chrome"))
-            {
-                GUI_TextField_Objective = "chrome";
-            }
-            if (GUILayout.Button("microsoft Edge"))
-            {
-                GUI_TextField_Objective = "msedge";
-            }
-            GUILayout.EndHorizontal();
-
-
-            GUI_TextField_Objective = GUILayout.TextField(GUI_TextField_Objective);
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("使用那个镜像站"); // 文字
-            if (GUILayout.Button("普莉姆拉主站"))
-            {
-                GUI_TextField_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
-            }
-            if (GUILayout.Button("本苗镜像站"))
-            {
-                GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
-            }
-            GUILayout.EndHorizontal();
-            GUI_TextField_WebUiUrl = GUILayout.TextField(GUI_TextField_WebUiUrl);
 
 
             GUILayout.BeginHorizontal();//横排
-
-
             if (GUILayout.Button("启动事件管理器"))
             {
                 new EventEditor().run_HaLua(@"
@@ -628,6 +620,7 @@ EOF;
                         Pid = Game_PID,
                         Objective = GUI_TextField_Objective,
                         EditorUrl = GUI_TextField_WebUiUrl,
+                        directory = Game_directory,
                     };
 
                     string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
@@ -639,11 +632,8 @@ EOF;
 
                 });
             }
-
-            //GUI.enabled = new EventEditor().IsConnected;
-            GUI.enabled= true;
-
-            if (GUILayout.Button("重新启动事件管理器"))
+            GUI.enabled = true;
+            if (GUILayout.Button("重新连接事件管理器"))
             {
 
                 DataJson json = new DataJson
@@ -653,6 +643,7 @@ EOF;
                     Pid = Game_PID,
                     Objective = GUI_TextField_Objective,
                     EditorUrl = GUI_TextField_WebUiUrl,
+                    directory = Game_directory,
                 };
 
                 string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
@@ -660,8 +651,51 @@ EOF;
                 new EventEditor().Send("MiaoAicMod_EventEditor", payload);
             }
             GUI.enabled = true;
-
             GUILayout.EndHorizontal();
+
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("使用什么浏览器启动"); 
+            if (GUILayout.Button("Google Chrome"))
+            {
+                GUI_TextField_Objective = "chrome";
+            }
+            if (GUILayout.Button("microsoft Edge"))
+            {
+                GUI_TextField_Objective = "msedge";
+            }
+            GUILayout.EndHorizontal();
+
+
+            GUI_TextField_Objective = GUILayout.TextField(GUI_TextField_Objective);
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("使用那个镜像站"); // 文字
+            if (GUILayout.Button("普莉姆拉主站"))
+            {
+                GUI_TextField_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
+            }
+            if (GUILayout.Button("本苗镜像站"))
+            {
+                GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
+            }
+            GUILayout.EndHorizontal();
+            GUI_TextField_WebUiUrl = GUILayout.TextField(GUI_TextField_WebUiUrl);
+
+
+            if (GUILayout.Button("刷新数据(不知道为什么没效果暂时放这吧)"))
+            {
+                new EventEditor().ForceReloadText();
+            }
+            GUILayout.Label("\nWenUI部分由 B站@普莉姆拉老师开发", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(0.8f, 0.4f, 1f) } });
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("事件编辑器WebUI GitHub项目")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn/AicEventEditor") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+
+
             if (GUI_Bool_ModDebug == true)
             {
                 if (GUILayout.Button("Test1"))
@@ -707,6 +741,8 @@ EOF;
 ");
                 }
             }
+
+
             GUILayout.EndHorizontal();
             #endregion
 
@@ -1027,6 +1063,23 @@ EOF;
             }
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
+
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.Label("事件编辑器WebUi部分开发者:"); // 文字
+            GUILayout.BeginHorizontal();//横排
+            if (GUILayout.Button("b站")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/399329257") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn/AicEventEditor") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+
+
 
             GUILayout.BeginVertical(GUI.skin.box);//竖排
             GUILayout.BeginHorizontal();//横排
@@ -1349,6 +1402,40 @@ EOF;
             {
                 XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] m2d.M2Attackable.resetFlagsForGameOver 后置成功命中 游戏识别重新读档");
                 XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 杂鱼~杂鱼~又在看诺艾尔的战败CG~");
+            }
+        }
+
+
+
+        [HarmonyPatch] //  监听游戏XX.ActiveDebugger.runIRD方法 修复刷新
+        public static class XX_ActiveDebugger_runIRD_Patch
+        {
+            // 目标
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(XX.ActiveDebugger), "runIRD");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.ActiveDebugger.runIRD 前置成功命中");
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.ActiveDebugger.runIRD 后置成功命中");
             }
         }
 
@@ -1790,6 +1877,8 @@ EOF;
     
     public class EventEditor
     {
+        public static ActiveDebugger CachedAD;
+
         public class RequestDto
         {
             public string Command { get; set; }
@@ -1810,6 +1899,7 @@ EOF;
                 Objective,
                 PipeDirection.InOut))
             {
+                Console.WriteLine($"向 {Objective} 发送" + text);
                 client.Connect(3000);
 
                 using (var reader = new StreamReader(client))
@@ -1834,40 +1924,6 @@ EOF;
 
             return true;
         }
-
-        public void run_HaLua(string text)
-        {
-            Thread.Sleep(100);
-            try
-            {
-
-                // 1 缓存到 EV.Oevt_content
-                var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-                var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
-                evtContent[text] = text;
-                Thread.Sleep(100);
-                // 2 创建事件读取器并解析执行
-                EvReader ER = new EvReader(text, 0, null, null);
-                ER.parseText(text);
-                EV.stackReader(ER, -1);
-                
-                UnityEngine.Debug.Log("[CMDExecutor] 脚本执行完成: " + text);
-            }
-            catch (System.Exception ex)
-            {
-                UnityEngine.Debug.LogError("[CMDExecutor] 执行脚本出错: " + ex);
-            }
-        }
-
-        public class DataJson
-        {
-            public string Type { get; set; }
-            public string Text { get; set; }
-            public int Pid { get; set; }
-            public string Objective { get; set; }
-            public string EditorUrl { get; set; }
-        }
-
         public bool Receive(string Objective)
         {
             Console.WriteLine("服务端启动：" + Objective);
@@ -1914,6 +1970,81 @@ EOF;
 
             return true;
         }
+
+        public void run_HaLua(string text)
+        {
+            Thread.Sleep(100);
+            try
+            {
+
+                // 1 缓存到 EV.Oevt_content
+                var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
+                evtContent[text] = text;
+                Thread.Sleep(100);
+                // 2 创建事件读取器并解析执行
+                EvReader ER = new EvReader(text, 0, null, null);
+                ER.parseText(text);
+                EV.stackReader(ER, -1);
+                
+                UnityEngine.Debug.Log("[CMDExecutor] 脚本执行完成: " + text);
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError("[CMDExecutor] 执行脚本出错: " + ex);
+            }
+        }
+
+
+
+        public void ForceReloadText()
+        {
+            try
+            {
+                // 刷新文本
+                TX.reloadFontLetterSpace();
+                TX.reloadTx(true);
+
+                // 音效
+                if (SND.Ui != null)
+                {
+                    SND.Ui.play("saved", false);
+                }
+
+                //地图场景
+                M2DBase instance = M2DBase.Instance;
+                if (instance != null)
+                {
+                    instance.DGN.ColCon.reload();
+                    instance.curMap.closeSubMaps(false);
+                    instance.curMap.openSubMaps();
+                    instance.curMap.fineSubMap();
+                    instance.curMap.drawUCol();
+                    instance.curMap.drawCheck(0f);
+                }
+                //刷新debug
+                X.loadDebug();
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogError($"[GameReloader] 文本刷新出错: {e.Message}\n{e.StackTrace}");
+            }
+        }
+
+       
+    
+
+        public class DataJson
+        {
+            public string Type { get; set; }
+            public string Text { get; set; }
+            public int Pid { get; set; }
+            public string Objective { get; set; }
+            public string EditorUrl { get; set; }
+            public string directory { get; set; }
+
+        }
+
 
 
     }
