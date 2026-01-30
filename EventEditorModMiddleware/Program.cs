@@ -14,8 +14,8 @@ class EventEditorModMiddleware
 {
     internal class Program
     {
-        int Game_PID = 0;
-        string Game_directory = "";
+        static int Game_PID = 0;
+        static string Game_directory = "";
         static void Main(string[] args)
         {
             //Start("chrome", "https://api.ica.wiki/AIC/EventEditor/");
@@ -100,6 +100,8 @@ class EventEditorModMiddleware
                     {
                         Game_directory = Json.directory;
                         Game_PID = Json.Pid;
+                        Console.WriteLine("#XiaoMiaoICa: Game_PID:" + Game_PID);
+                        Console.WriteLine("#XiaoMiaoICa: Game_directory:" + Game_directory);
 
                         Task.Run(() =>
                         {
@@ -288,7 +290,7 @@ class EventEditorModMiddleware
                                     string isExportRaw = block.values.Bool_0; // 注意：Blockly 复选框通常返回字符串 "TRUE" 或 "FALSE"
                                     // 进行你的业务判断
                                     Console.WriteLine($"事件ID: {eventId}");
-                                    ExportToUtf8($"{new Program().Game_directory}\\AliceInCradle_Data\\StreamingAssets\\evt\\{eventId}.txt", code2);
+                                    ExportToUtf8($"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\evt\\{eventId}.cmd", code2);
                                     if (isExportRaw == "TRUE")
                                     {
                                         Console.WriteLine("对话单独导出已开启");
@@ -392,7 +394,7 @@ class EventEditorModMiddleware
                                             Console.WriteLine(userInputs[i]); // 打印具体内容
 
 
-                                            ExportToUtf8( $"{new Program().Game_directory}\\AliceInCradle_Data\\StreamingAssets\\localization\\{languagePath[i]}\\{Path.GetFileName(eventId)}.txt", userInputs[i]);
+                                            ExportToUtf8( $"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\localization\\{languagePath[i]}\\ev_{Path.GetFileName(eventId)}.txt", userInputs[i]);
                                             Console.WriteLine("-----------------------");
                                         }
 
