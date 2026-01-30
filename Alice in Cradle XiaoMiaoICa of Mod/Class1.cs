@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection;
@@ -150,38 +151,46 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Logger.LogMessage("#XiaoMiaoICa: Game_PID:" + Game_PID);
             Logger.LogMessage("#XiaoMiaoICa: Game_directory:" + Game_directory);
 
+            #region 解压事件管理器
+            if (File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "EventEditorModMiddleware.exe")) == false)
+            {
+                Logger.LogMessage("解压事件管理器");
+                ExtractEmbeddedZip("Alice_in_Cradle_XiaoMiaoICa_of_Mod.Data.EventEditorModMiddleware.zip", Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa"));
+            }
+
+            #endregion
             #region 导出dll和文件
-           
+
             var exportMap = new Dictionary<string, (string Dir, string OutputName)>
             {
                 // 资源名                         // 导出目录                               // 导出后的文件名
-                //{ "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins"), "Newtonsoft.Json.dll") },
+                { "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins"), "Newtonsoft.Json.dll") },
                 { "Data.ExportedAssets.__events_restroom.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_restroom.pxls.bytes.texture_0") },
                 { "Data.ExportedAssets.key_noel.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "key_noel") },
                 { "Data.ExportedAssets.__events_2weekattack.pxls.bytes.texture_0.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "__events_2weekattack.pxls.bytes.texture_0") },
                 { "Data.ExportedAssets.title_logo.png", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" , "Resources"), "title_logo") },
                 //事件编辑器相关文件
-                { "Data.EventEditorModMiddleware.exe", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "EventEditorModMiddleware.exe") },
-                { "DLL.Microsoft.Bcl.AsyncInterfaces.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Bcl.AsyncInterfaces.dll") },
-                { "DLL.Microsoft.CSharp.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.CSharp.dll") },
-                { "DLL.Microsoft.Playwright.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Playwright.dll") },
-                { "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Newtonsoft.Json.dll") },
-                { "DLL.System.Buffers.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Buffers.dll") },
-                { "DLL.System.ComponentModel.Annotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.Annotations.dll") },
-                { "DLL.System.ComponentModel.DataAnnotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.DataAnnotations.dll") },
-                { "DLL.System.Data.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Data.dll") },
-                { "DLL.System.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.dll") },
-                { "DLL.System.IO.Pipelines.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.IO.Pipelines.dll") },
-                { "DLL.System.Memory.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Memory.dll") },
-                { "DLL.System.Net.Http.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Net.Http.dll") },
-                { "DLL.System.Numerics.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.dll") },
-                { "DLL.System.Numerics.Vectors.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.Vectors.dll") },
-                { "DLL.System.Runtime.CompilerServices.Unsafe.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Runtime.CompilerServices.Unsafe.dll") },
-                { "DLL.System.Text.Encodings.Web.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Encodings.Web.dll") },
-                { "DLL.System.Text.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Json.dll") },
-                { "DLL.System.Threading.Tasks.Extensions.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Threading.Tasks.Extensions.dll") },
-                { "DLL.System.Xml.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.dll") },
-                { "DLL.System.Xml.Linq.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.Linq.dll") },
+                //{ "Data.EventEditorModMiddleware.exe", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "EventEditorModMiddleware.exe") },
+                //{ "DLL.Microsoft.Bcl.AsyncInterfaces.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Bcl.AsyncInterfaces.dll") },
+                //{ "DLL.Microsoft.CSharp.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.CSharp.dll") },
+                //{ "DLL.Microsoft.Playwright.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Microsoft.Playwright.dll") },
+                //{ "DLL.Newtonsoft.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "Newtonsoft.Json.dll") },
+                //{ "DLL.System.Buffers.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Buffers.dll") },
+                //{ "DLL.System.ComponentModel.Annotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.Annotations.dll") },
+                //{ "DLL.System.ComponentModel.DataAnnotations.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.ComponentModel.DataAnnotations.dll") },
+                //{ "DLL.System.Data.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Data.dll") },
+                //{ "DLL.System.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.dll") },
+                //{ "DLL.System.IO.Pipelines.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.IO.Pipelines.dll") },
+                //{ "DLL.System.Memory.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Memory.dll") },
+                //{ "DLL.System.Net.Http.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Net.Http.dll") },
+                //{ "DLL.System.Numerics.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.dll") },
+                //{ "DLL.System.Numerics.Vectors.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Numerics.Vectors.dll") },
+                //{ "DLL.System.Runtime.CompilerServices.Unsafe.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Runtime.CompilerServices.Unsafe.dll") },
+                //{ "DLL.System.Text.Encodings.Web.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Encodings.Web.dll") },
+                //{ "DLL.System.Text.Json.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Text.Json.dll") },
+                //{ "DLL.System.Threading.Tasks.Extensions.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Threading.Tasks.Extensions.dll") },
+                //{ "DLL.System.Xml.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.dll") },
+                //{ "DLL.System.Xml.Linq.dll", (Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa" ), "System.Xml.Linq.dll") },
             };
 
             foreach (var item in exportMap)
@@ -1157,6 +1166,39 @@ EOF;
 
                     }
                     break;
+                }
+            }
+        }
+
+        //解压嵌入的zip文件
+        public static void ExtractEmbeddedZip(string resourceName, string outputDir)
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+            Stream zipStream = asm.GetManifestResourceStream(resourceName);
+
+            if (zipStream == null)
+                throw new Exception("找不到嵌入 ZIP：" + resourceName);
+
+            using (zipStream)
+            using (ZipArchive archive = new ZipArchive(zipStream))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    string fullPath = Path.Combine(outputDir, entry.FullName);
+
+                    if (string.IsNullOrEmpty(entry.Name))
+                    {
+                        Directory.CreateDirectory(fullPath);
+                        continue;
+                    }
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+
+                    using (Stream entryStream = entry.Open())
+                    using (FileStream fs = new FileStream(fullPath, FileMode.Create))
+                    {
+                        entryStream.CopyTo(fs);
+                    }
                 }
             }
         }
