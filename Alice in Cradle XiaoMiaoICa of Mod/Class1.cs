@@ -7,7 +7,6 @@ using evt;//unsafeAssem.dll
 using HarmonyLib;
 using m2d;
 using nel; //Assembly-CSharp.dll
-
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -15,8 +14,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.IO.Compression;
+using System.IO.Pipes;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection;
@@ -30,6 +29,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI; 
 using XX;
 using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.EventEditor;
@@ -696,6 +696,7 @@ EOF;
             {
                 new EventEditor().ForceReloadText();
             }
+
             GUILayout.Label("\nWenUI部分由 B站@普莉姆拉老师开发", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(0.8f, 0.4f, 1f) } });
             GUILayout.BeginHorizontal();//横排
             if (GUILayout.Button("事件编辑器WebUI GitHub项目")) // 按钮
@@ -1447,9 +1448,7 @@ EOF;
             }
         }
 
-
-
-        [HarmonyPatch] //  监听游戏XX.ActiveDebugger.runIRD方法 修复刷新
+        //[HarmonyPatch] //  监听游戏XX.ActiveDebugger.runIRD方法 
         public static class XX_ActiveDebugger_runIRD_Patch
         {
             // 目标
@@ -1480,6 +1479,96 @@ EOF;
                 XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.ActiveDebugger.runIRD 后置成功命中");
             }
         }
+
+        [HarmonyPatch] //  监听游戏XX.IN.Awake方法 修复F9刷新
+        public static class XX_IN_Awake_Patch
+        {
+            // 目标
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(XX.IN), "Awake");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.IN.Awake 前置成功命中");
+
+
+
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.IN.Awake 后置成功命中");
+
+
+                if (ActiveDebugger.Instance)
+                {
+                    IN.addRunner(ActiveDebugger.Instance);
+                }
+
+            }
+        }
+
+        [HarmonyPatch] // 监听 XX.X.loadDebug //强制开启F9
+        public static class XX_X_loadDebug_Patch
+        {
+            private static FieldInfo _reloadMtrField;
+            private static FieldInfo _debugField;
+
+            // 目标方法
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(XX.X), "loadDebug");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到 XX.X.loadDebug");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.X.loadDebug Prefix 命中" );
+                return true; 
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                // 缓存 FieldInfo
+                if (_reloadMtrField == null || _debugField == null)
+                {
+                    var xType = typeof(XX.X);
+                    _reloadMtrField = AccessTools.Field(xType, "DEBUGRELOADMTR");
+                    _debugField = AccessTools.Field(xType, "DEBUG");
+                }
+
+                // 强制开启
+                _debugField?.SetValue(null, true);
+                _reloadMtrField?.SetValue(null, true);
+
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 强制 DEBUGRELOADMTR = true");
+            }
+        }
+
 
         [HarmonyPatch] // 多图贴图替换补丁类
         public static class MultiImagePatchHandler
@@ -1638,6 +1727,7 @@ EOF;
                 SetBool("timestamp", i);
             }
 
+
             public static void SetBool(string name, bool value)
             {
                 var type = typeof(XX.X);
@@ -1655,7 +1745,12 @@ EOF;
                 }
             }
         }
-        
+
+        public class Patch_XX_reloadmtr
+        {
+            
+        }
+
 
 
 
@@ -1919,7 +2014,8 @@ EOF;
     
     public class EventEditor
     {
-        public static ActiveDebugger CachedAD;
+        private static FieldInfo _reloadMtrField;
+        private static FieldInfo _debugField;
 
         public class RequestDto
         {
@@ -2013,18 +2109,22 @@ EOF;
             return true;
         }
 
+        /// <summary>
+        /// 执行哈语言
+        /// </summary>
+        /// <param text="哈语言">要执行的哈语言</param>
+        /// <returns>无返回</returns>
         public void run_HaLua(string text)
         {
-            Thread.Sleep(100);
             try
             {
 
-                // 1 缓存到 EV.Oevt_content
+                // 缓存到 EV.Oevt_content
                 var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
                 var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
                 evtContent[text] = text;
                 Thread.Sleep(100);
-                // 2 创建事件读取器并解析执行
+                // 创建事件读取器并解析执行
                 EvReader ER = new EvReader(text, 0, null, null);
                 ER.parseText(text);
                 EV.stackReader(ER, -1);
@@ -2036,8 +2136,6 @@ EOF;
                 UnityEngine.Debug.LogError("[CMDExecutor] 执行脚本出错: " + ex);
             }
         }
-
-
 
         public void ForceReloadText()
         {
@@ -2074,8 +2172,6 @@ EOF;
         }
 
        
-    
-
         public class DataJson
         {
             public string Type { get; set; }
