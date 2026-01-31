@@ -325,63 +325,135 @@ class EventEditorModMiddleware
                                         catch (Microsoft.Playwright.PlaywrightException ex) when (ex.Message.Contains("already registered"))
                                         {
                                         }
-                                        await page.EvaluateAsync(@"(code_en) => {
-    // 1. 如果页面上已经存在旧的弹窗，先移除它
+                                        await page.EvaluateAsync(@"(code_init) => {
+    // 1. 清理旧弹窗
     const oldOverlay = document.getElementById('my-custom-overlay');
     if (oldOverlay) oldOverlay.remove();
-    // 2. 样式定义
-    const containerStyle = 'background-color: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 15px; width: 600px; max-height: 90vh; overflow-y: auto; font-family: sans-serif;';
-    const textareaStyle = 'padding: 8px; width: 100%; height: 80px; font-family: monospace; resize: vertical; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;';
-    // 3. 配置字段与默认值
+
+    // 2. 配置字段
     const fieldsConfig = [
-        { label: '英语 (English)', val: code_en },
-        { label: '韩语 (Korean)', val: code_en },
-        { label: '泰语 (Thai)', val: code_en },
-        { label: '简体中文 (Simplified Chinese)', val: code_en },
-        { label: '繁体中文 (Traditional Chinese)', val: code_en },
-        { label: '日语 (Japanese)', val: code_en }
+        { label: '英语 (English)', id: 'en' },
+        { label: '韩语 (Korean)', id: 'ko' },
+        { label: '泰语 (Thai)', id: 'th' },
+        { label: '简体中文 (Simplified Chinese)', id: 'zh-cn' }, // Index 3
+        { label: '繁体中文 (Traditional Chinese)', id: 'zh-tw' },
+        { label: '日语 (Japanese)', id: 'ja' }
     ];
-    // 4. 创建遮罩层
+
+    // 初始化数据：所有语言默认值都设为传入的 code_init
+    // 使用 String(code_init) 确保它是字符串，防止 undefined 报错
+    const safeCode = code_init ? String(code_init) : '';
+    const dataValues = fieldsConfig.map(() => safeCode);
+    
+    // 【修复点1】初始索引设为 -1，表示尚未选中任何语言
+    // 这样 switchLanguage 函数第一次运行时，就不会尝试去“保存”空内容覆盖掉默认值
+    let activeIndex = -1;
+
+    // 3. 样式定义
+    const overlayStyle = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 99999; display: flex; justify-content: center; align-items: center;';
+    const containerStyle = 'background-color: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: flex; width: 900px; height: 600px; overflow: hidden; font-family: sans-serif;';
+    const sidebarStyle = 'width: 220px; background-color: #f5f5f5; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
+    const navBtnStyle = 'padding: 10px 15px; cursor: pointer; border-radius: 4px; border: none; background: transparent; text-align: left; font-size: 14px; color: #333; transition: all 0.2s; outline: none;';
+    const navBtnActiveStyle = 'background-color: #2196F3; color: white; font-weight: bold; box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);';
+    const contentStyle = 'flex: 1; padding: 25px; display: flex; flex-direction: column; background-color: #fff;';
+    const labelStyle = 'font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 10px;';
+    const textareaStyle = 'flex: 1; width: 100%; padding: 15px; font-family: monospace; font-size: 14px; line-height: 1.5; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: none; outline: none; margin-bottom: 15px;';
+    const footerStyle = 'display: flex; justify-content: flex-end; gap: 10px;';
+
+    // 4. 创建 DOM 结构
     const overlay = document.createElement('div');
     overlay.id = 'my-custom-overlay';
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 99999; display: flex; justify-content: center; align-items: center;';
+    overlay.style.cssText = overlayStyle;
+
     const container = document.createElement('div');
     container.style.cssText = containerStyle;
-    const textareas = [];
-    // 5. 循环生成控件
-    fieldsConfig.forEach((field) => {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.flexDirection = 'column';
-        row.style.gap = '5px';
-        const label = document.createElement('label');
-        label.innerText = field.label + ':';
-        label.style.fontWeight = 'bold';
-        const textarea = document.createElement('textarea');
-        textarea.style.cssText = textareaStyle;
-        // --- 【修复点】将默认内容赋值给输入框 ---
-        textarea.value = field.val; 
-        // 可选：添加占位提示
-        textarea.placeholder = '请输入' + field.label + '内容...';
-        textareas.push(textarea);
-        row.appendChild(label);
-        row.appendChild(textarea);
-        container.appendChild(row);
+
+    const sidebar = document.createElement('div');
+    sidebar.style.cssText = sidebarStyle;
+
+    const contentArea = document.createElement('div');
+    contentArea.style.cssText = contentStyle;
+
+    const currentLabel = document.createElement('div');
+    currentLabel.style.cssText = labelStyle;
+    
+    const textarea = document.createElement('textarea');
+    textarea.style.cssText = textareaStyle;
+    textarea.placeholder = '在此输入翻译内容...';
+
+    const footer = document.createElement('div');
+    footer.style.cssText = footerStyle;
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.innerText = '确认保存并覆盖';
+    confirmBtn.style.cssText = 'padding: 10px 25px; cursor: pointer; background-color: #2196F3; color: white; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.innerText = '关闭';
+    cancelBtn.style.cssText = 'padding: 10px 20px; cursor: pointer; background-color: #e0e0e0; color: #333; border: none; border-radius: 4px; font-size: 15px; margin-right: 10px;';
+    cancelBtn.onclick = () => overlay.remove();
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(confirmBtn);
+
+    contentArea.appendChild(currentLabel);
+    contentArea.appendChild(textarea);
+    contentArea.appendChild(footer);
+
+    const buttons = [];
+
+    function switchLanguage(newIndex) {
+        if (activeIndex !== -1) {
+            dataValues[activeIndex] = textarea.value;
+        }
+
+        // 更新索引
+        activeIndex = newIndex;
+
+        // 加载数据到文本框
+        textarea.value = dataValues[activeIndex] || '';
+        currentLabel.innerText = '正在编辑: ' + fieldsConfig[activeIndex].label;
+
+        // 更新按钮样式
+        buttons.forEach((btn, idx) => {
+            if (idx === newIndex) {
+                btn.style.cssText = navBtnStyle + navBtnActiveStyle;
+            } else {
+                btn.style.cssText = navBtnStyle;
+            }
+        });
+        
+        textarea.focus();
+    }
+
+    fieldsConfig.forEach((field, index) => {
+        const btn = document.createElement('button');
+        btn.innerText = field.label;
+        btn.onclick = () => switchLanguage(index);
+        sidebar.appendChild(btn);
+        buttons.push(btn);
     });
-    // 6. 确认按钮
-    const btn = document.createElement('button');
-    btn.innerText = '确认保存';
-    btn.style.cssText = 'margin-top: 10px; padding: 12px; cursor: pointer; background-color: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold;';
-    btn.onclick = () => {
-        const resultValues = textareas.map(t => t.value);
+
+    confirmBtn.onclick = () => {
+        // 保存最后一次编辑的内容
+        if (activeIndex !== -1) {
+            dataValues[activeIndex] = textarea.value;
+        }
+        
         if (window.onLanguageSubmit) {
-            window.onLanguageSubmit(resultValues); 
+            window.onLanguageSubmit(dataValues); 
         }
         overlay.remove();
     };
-    container.appendChild(btn);
+
+    container.appendChild(sidebar);
+    container.appendChild(contentArea);
     overlay.appendChild(container);
     document.body.appendChild(overlay);
+
+    // 9. 触发默认选中 (简体中文 - Index 3)
+    switchLanguage(3);
+
 }", code);
                                         //获取结果并打印
                                         string[] userInputs = await currentLanguageTcs.Task;
