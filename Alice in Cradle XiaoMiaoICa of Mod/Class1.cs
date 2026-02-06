@@ -107,10 +107,23 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private Vector2 svPos; // 界面滑动条
 
         #endregion
+        void Awake()
+        {
+            Instance = this;
+            // 自动加载所有带有 [HarmonyPatch] 特性的类
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
+            //Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
+
+            var harmony = new Harmony("com.xiaomiao.mod");
+            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            int count = 0;
+            foreach (var method in harmony.GetPatchedMethods()) count++;
+            XiaoMiaoICaMod.Instance.Logger.LogInfo($">>> 成功加载了 " + count + " 个补丁方法");
+        }
 
         void Start()//启动
         {
-            Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
+
             UnityEngine.Debug.Log("Test1");// Unity输出 灰色
             Logger.LogError("Test2");// 错误 
             Logger.LogFatal("Test3");//致命 淡红色
@@ -118,17 +131,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Logger.LogInfo("Test6");//信息 灰色            Logger.LogMessage("Test5");//消息 白色
             Logger.LogDebug("Test7");//调试
 
-            Instance = this;
-
-            var harmony = new Harmony("com.xiaomiao.mod");
-            // 强制指定程序集加载，防止扫描不到
-            var assembly = Assembly.GetExecutingAssembly();
-            harmony.PatchAll(assembly);
-            // 打印已加载的补丁数量来确认
-            var patchedMethods = harmony.GetPatchedMethods();
-            int count = 0;
-            foreach (var method in patchedMethods) count++;
-            Logger.LogInfo($"Harmony 成功加载了 "+count+" 个补丁方法");
+            
 
 
             //获取PID
@@ -211,10 +214,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                 {
                     Console.WriteLine($"导出 {resourceFile} → {targetPath}");
 
-                    ExportEmbedResources(
-                        "Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile,
-                        targetPath
-                    );
+                    string result = M_EF.Config_Read("Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile,targetPath);
                 }
             }
 
@@ -303,7 +303,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             //}
             #endregion
         }
-        
+    
         void OnGUI()//绘制UI
         {
             if (showWindow)
@@ -332,7 +332,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                 showWindow = !showWindow; // 切换窗口显示状态
             }
         }
-
 
         public void WindowsFunc_utilization_agreement(int id)//控件_用户协议
         {
@@ -1008,10 +1007,21 @@ EOF;
                 }
 
                 GUILayout.EndHorizontal();
+
+
+                if (GUILayout.Button("测试 TX.changeFamily(\"zh-cn\")"))
+                {
+                    TX.changeFamily("zh-cn");//切换语言
+                }
+                if (GUILayout.Button("测试 TX.changeFamily(\"jp\")"))
+                {
+                    TX.changeFamily("jp");//切换语言
+                }
             }
             GUILayout.EndHorizontal();
 
             
+
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
             #endregion
@@ -1522,53 +1532,38 @@ EOF;
             }
         }
 
-        [HarmonyPatch] // 监听 XX.X.loadDebug //强制开启F9
-        public static class XX_X_loadDebug_Patch
+        [HarmonyPatch] // 开启F9
+        public static class ForceReloadMTR_Patch
         {
-            private static FieldInfo _reloadMtrField;
-            private static FieldInfo _debugField;
-
-            // 目标方法
+            // 指定目标：SceneManager.Internal_SceneLoaded
             [HarmonyTargetMethod]
             static MethodBase TargetMethod()
             {
-                var method = AccessTools.Method(typeof(XX.X), "loadDebug");
-
+                var method = AccessTools.Method(typeof(SceneManager), "Internal_SceneLoaded");
                 if (method == null)
                 {
-                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到 XX.X.loadDebug");
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> 找不到 Internal_SceneLoaded 方法");
                 }
                 return method;
             }
 
-            // 前置
-            [HarmonyPrefix]
-            public static bool Prefix()
-            {
-                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.X.loadDebug Prefix 命中" );
-                return true; 
-            }
-
-            // 后置
+            // 后置补丁
             [HarmonyPostfix]
             public static void Postfix()
             {
-                // 缓存 FieldInfo
-                if (_reloadMtrField == null || _debugField == null)
+                UnityEngine.Debug.Log(">>> [ForceReloadMTR] 场景加载完成，正在强制开启 DEBUG 模式");
+
+                var xType = AccessTools.TypeByName("XX.X");
+                if (xType != null)
                 {
-                    var xType = typeof(XX.X);
-                    _reloadMtrField = AccessTools.Field(xType, "DEBUGRELOADMTR");
-                    _debugField = AccessTools.Field(xType, "DEBUG");
+                    // 获取并设置字段值
+                    AccessTools.Field(xType, "DEBUG")?.SetValue(null, true);
+                    AccessTools.Field(xType, "DEBUGRELOADMTR")?.SetValue(null, true);
+
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 开启了F9刷新");
                 }
-
-                // 强制开启
-                _debugField?.SetValue(null, true);
-                _reloadMtrField?.SetValue(null, true);
-
-                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 强制 DEBUGRELOADMTR = true");
             }
         }
-
 
         [HarmonyPatch] // 多图贴图替换补丁类
         public static class MultiImagePatchHandler
@@ -1746,56 +1741,11 @@ EOF;
             }
         }
 
-        public class Patch_XX_reloadmtr
-        {
-            
-        }
 
 
 
 
-        /// <summary>
-        /// 导出切入资源
-        /// </summary>
-        /// <param name="FileName"></param>
-        /// <param name="Path"></param>
-        /// <returns></returns>
-        public bool ExportEmbedResources(string FileName, string Path) // 导出嵌入资源
-        {
-            try
-            {
-                // 获取当前程序集
-                Assembly assembly = Assembly.GetExecutingAssembly();
 
-                // 构造嵌入资源的完整名称
-                string resourceName = $"{FileName}";
-
-                // 检查资源是否存在
-                using (Stream resourceStream = assembly.GetManifestResourceStream(resourceName))
-                {
-                    if (resourceStream == null)
-                    {
-                        Console.WriteLine($"嵌入资源未找到：{resourceName}");
-                        Console.WriteLine($"资源加载失败，可用资源列表:\n{string.Join("\n", assembly.GetManifestResourceNames())}");
-                        return false;
-                    }
-
-                    // 将嵌入的资源导出到文件系统
-                    using (FileStream fileStream = new FileStream(Path, FileMode.Create, FileAccess.Write))
-                    {
-                        resourceStream.CopyTo(fileStream);
-                    }
-
-                    Console.WriteLine($"资源已成功导出到: {Path}");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"导出失败: {ex.Message}");
-                return false;
-            }
-        }
     }
 
 
@@ -2129,11 +2079,11 @@ EOF;
                 ER.parseText(text);
                 EV.stackReader(ER, -1);
                 
-                UnityEngine.Debug.Log("[CMDExecutor] 脚本执行完成: " + text);
+                UnityEngine.Debug.Log("脚本执行完成: " + text);
             }
             catch (System.Exception ex)
             {
-                UnityEngine.Debug.LogError("[CMDExecutor] 执行脚本出错: " + ex);
+                UnityEngine.Debug.LogError("执行脚本出错: " + ex);
             }
         }
 
@@ -2187,7 +2137,7 @@ EOF;
 
     }
 
-    public static class M_EF    //Extended functionality
+    public class M_EF    //Extended functionality
     {
         /// <summary>
         /// 写入配置文件
