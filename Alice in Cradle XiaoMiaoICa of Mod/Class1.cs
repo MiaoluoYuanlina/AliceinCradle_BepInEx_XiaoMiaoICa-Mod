@@ -101,8 +101,10 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private static bool GUI_Bool_ModDebug_Export_Resources = false; // 开关_Mod调试_导出资源
         private static bool GUI_Bool_ModDebug_Noel_info = false; //开关_Mod调试_显示Noel信息
 
-        private static string GUI_TextField_Objective = "chrome";//使用什浏览器
-        private static string GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor/";//打开的网址
+        private static string GUI_TextField_EventEditor_Objective = "chrome";//使用什浏览器
+        private static string GUI_TextField_EventEditor_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor/";//打开的网址
+        private static string GUI_TextField_EventEditor_RunText = "MSG n_<<<EOF \r\n<c6>你想要试试趴虫墙吗？\r\nEOF;";//使用什浏览器
+        private static bool GUI_TextField_EventEditor_bool = false;//是否将输出过来是哈语言不直接执行
 
         private Vector2 svPos; // 界面滑动条
 
@@ -131,6 +133,10 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Logger.LogInfo("Test6");//信息 灰色            Logger.LogMessage("Test5");//消息 白色
             Logger.LogDebug("Test7");//调试
 
+            Task.Run(() =>
+            {
+                new EventEditor().Receive("MiaoAicMod_Mod");
+            });
             
 
 
@@ -602,11 +608,6 @@ EOF;
 
                     Task.Run(() =>
                     {
-                        new EventEditor().Receive("MiaoAicMod_Mod");
-
-                    });
-                    Task.Run(() =>
-                    {
                         ;
                         string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Game_directory + "\\BepInEx\\plugins\\XiaoMiao_ICa\\EventEditorModMiddleware.exe");
 
@@ -626,8 +627,8 @@ EOF;
                         Type = "EventEditor_Start",
                         Text = "",
                         Pid = Game_PID,
-                        Objective = GUI_TextField_Objective,
-                        EditorUrl = GUI_TextField_WebUiUrl,
+                        Objective = GUI_TextField_EventEditor_Objective,
+                        EditorUrl = GUI_TextField_EventEditor_WebUiUrl,
                         directory = Game_directory,
                     };
 
@@ -649,8 +650,8 @@ EOF;
                     Type = "EventEditor_Start",
                     Text = "",
                     Pid = Game_PID,
-                    Objective = GUI_TextField_Objective,
-                    EditorUrl = GUI_TextField_WebUiUrl,
+                    Objective = GUI_TextField_EventEditor_Objective,
+                    EditorUrl = GUI_TextField_EventEditor_WebUiUrl,
                     directory = Game_directory,
                 };
 
@@ -666,35 +667,49 @@ EOF;
             GUILayout.Label("使用什么浏览器启动"); 
             if (GUILayout.Button("Google Chrome"))
             {
-                GUI_TextField_Objective = "chrome";
+                GUI_TextField_EventEditor_Objective = "chrome";
             }
             if (GUILayout.Button("microsoft Edge"))
             {
-                GUI_TextField_Objective = "msedge";
+                GUI_TextField_EventEditor_Objective = "msedge";
             }
             GUILayout.EndHorizontal();
 
 
-            GUI_TextField_Objective = GUILayout.TextField(GUI_TextField_Objective);
+            GUI_TextField_EventEditor_Objective = GUILayout.TextField(GUI_TextField_EventEditor_Objective);
 
             GUILayout.BeginHorizontal();//横排
             GUILayout.Label("使用那个镜像站"); // 文字
             if (GUILayout.Button("普莉姆拉主站"))
             {
-                GUI_TextField_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
+                GUI_TextField_EventEditor_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
             }
             if (GUILayout.Button("本苗镜像站"))
             {
-                GUI_TextField_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
+                GUI_TextField_EventEditor_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
             }
             GUILayout.EndHorizontal();
-            GUI_TextField_WebUiUrl = GUILayout.TextField(GUI_TextField_WebUiUrl);
+            GUI_TextField_EventEditor_WebUiUrl = GUILayout.TextField(GUI_TextField_EventEditor_WebUiUrl);
 
 
-            if (GUILayout.Button("刷新数据(不知道为什么没效果暂时放这吧)"))
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("刷新游戏的文本数据");
+            if (GUILayout.Button("刷新数据"))
             {
                 new EventEditor().ForceReloadText();
             }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            var GUI_TextField_EventEditor_RunText_s = GUI.skin.textArea;
+            GUI_TextField_EventEditor_RunText = GUILayout.TextArea(GUI_TextField_EventEditor_RunText, GUILayout.Height(GUI_TextField_EventEditor_RunText_s.CalcHeight(new GUIContent(GUI_TextField_EventEditor_RunText), 300))
+            );
+            GUI_TextField_EventEditor_bool = GUILayout.Toggle(GUI_TextField_EventEditor_bool, "不直接执行传递过来的《哈语言》。");
+            if (GUILayout.Button("执行")) // 按钮
+            {
+                new EventEditor().run_HaLua(GUI_TextField_EventEditor_RunText);
+            }
+            GUILayout.EndHorizontal();
 
             GUILayout.Label("\nWenUI部分由 B站@普莉姆拉老师开发", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(0.8f, 0.4f, 1f) } });
             GUILayout.BeginHorizontal();//横排
@@ -703,6 +718,8 @@ EOF;
                 Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn/AicEventEditor") { UseShellExecute = true });
             }
             GUILayout.EndHorizontal();
+
+            
 
 
             if (GUI_Bool_ModDebug == true)
@@ -741,15 +758,8 @@ EOF;
                         Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
                     }
                 }
-                if (GUILayout.Button("Test2"))
-                {
-                    new EventEditor().run_HaLua(@"
-TX_BOARD <<<EOF 
-<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
-EOF;
-");
-                }
             }
+
 
 
             GUILayout.EndHorizontal();
@@ -1139,6 +1149,16 @@ EOF;
             GUI.DragWindow();// 允许拖动窗口  
             #endregion
         }
+
+        public bool Get_GUI_TextField_EventEditor_bool()//获取事件编辑器不直接执行哈语言选项
+        {
+            return GUI_TextField_EventEditor_bool;
+        }
+        public void Set_GUI_TextField_EventEditor_RunText(string value)
+        {
+            GUI_TextField_EventEditor_RunText = value;
+        }
+
 
         public static void SavepreferencesConfig()//保存配置
         {
@@ -1542,7 +1562,7 @@ EOF;
                 var method = AccessTools.Method(typeof(SceneManager), "Internal_SceneLoaded");
                 if (method == null)
                 {
-                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> 找不到 Internal_SceneLoaded 方法");
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>>[XiaoMiaoICa] 找不到 Internal_SceneLoaded 方法");
                 }
                 return method;
             }
@@ -1551,7 +1571,7 @@ EOF;
             [HarmonyPostfix]
             public static void Postfix()
             {
-                UnityEngine.Debug.Log(">>> [ForceReloadMTR] 场景加载完成，正在强制开启 DEBUG 模式");
+                UnityEngine.Debug.Log(">>> [XiaoMiaoICa] 场景加载完成，正在强制开启 F9");
 
                 var xType = AccessTools.TypeByName("XX.X");
                 if (xType != null)
@@ -1740,10 +1760,6 @@ EOF;
                 }
             }
         }
-
-
-
-
 
 
     }
@@ -1967,96 +1983,137 @@ EOF;
         private static FieldInfo _reloadMtrField;
         private static FieldInfo _debugField;
 
+
+        public class DataJson
+        {
+            public string Type { get; set; }
+            public string Text { get; set; }
+            public int Pid { get; set; }
+            public string Objective { get; set; }
+            public string EditorUrl { get; set; }
+            public string directory { get; set; }
+        }
         public class RequestDto
         {
             public string Command { get; set; }
             public int Value { get; set; }
         }
-
         public class ResponseDto
         {
             public bool Success { get; set; }
             public string Message { get; set; }
         }
-
-        public bool Send(string Objective,string text)
+        public bool Send(string Objective, string text)
         {
-
-            using (var client = new NamedPipeClientStream(
-                ".",
-                Objective,
-                PipeDirection.InOut))
+            using (var client = new NamedPipeClientStream(".", Objective, PipeDirection.InOut))
             {
-                Console.WriteLine($"向 {Objective} 发送" + text);
-                client.Connect(3000);
-
-                using (var reader = new StreamReader(client))
-                using (var writer = new StreamWriter(client))
+                try
                 {
-                    writer.AutoFlush = true;
+                    client.Connect(3000);
 
-                    var req = new RequestDto
+                    using (var reader = new StreamReader(client))
+                    using (var writer = new StreamWriter(client))
                     {
-                        Command = text,
-                        Value = 123
-                    };
-                    string json = JsonConvert.SerializeObject(req);
-                    writer.WriteLine(json);
+                        writer.AutoFlush = true;
 
-                    string resp = reader.ReadLine();
-                    Console.WriteLine("返回：" + resp);
+                        var req = new RequestDto
+                        {
+                            Command = text,
+                            Value = 123
+                        };
+
+                        // 修复点 1: 使用 JsonConvert.SerializeObject 替代 JsonSerializer.Serialize
+                        string jsonPayload = JsonConvert.SerializeObject(req);
+                        writer.WriteLine(jsonPayload);
+
+                        string resp = reader.ReadLine();
+                        Console.WriteLine("返回：" + resp);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("发送失败：" + ex.Message);
+                    return false;
                 }
             }
-
-
-
             return true;
         }
+
         public bool Receive(string Objective)
         {
             Console.WriteLine("服务端启动：" + Objective);
 
             while (true)
             {
-                using (var server = new NamedPipeServerStream(
-                    Objective,
-                    PipeDirection.InOut,
-                    1,
-                    PipeTransmissionMode.Message))
+                try
                 {
-                    server.WaitForConnection();
-
-                    using (var reader = new StreamReader(server))
-                    using (var writer = new StreamWriter(server))
+                    using (var server = new NamedPipeServerStream(
+                        Objective,
+                        PipeDirection.InOut,
+                        1,
+                        PipeTransmissionMode.Byte)) // 注意：StreamReader 通常配合 Byte 模式更稳定
                     {
-                        writer.AutoFlush = true;
+                        server.WaitForConnection();
 
-                        string json = reader.ReadLine();
-
-                        var req = JsonConvert.DeserializeObject<RequestDto>(json);
-
-                        Console.WriteLine("收到命令：" + req.Command);
-
-                        DataJson Json = JsonConvert.DeserializeObject<DataJson>(req.Command);
-
-                        if (Json.Type == "EventEditor_Text")
+                        using (var reader = new StreamReader(server))
+                        using (var writer = new StreamWriter(server) { AutoFlush = true })
                         {
-                            Console.WriteLine("返回编辑器内容：\n" + Json.Text);
-                            run_HaLua(Json.Text);
+                            string json = reader.ReadLine();
+                            if (string.IsNullOrWhiteSpace(json))
+                            {
+                                Console.WriteLine("收到空数据");
+                                continue;
+                            }
+
+                            // 修复点 2: 使用 JsonConvert.DeserializeObject 替代 JsonSerializer.Deserialize
+                            var req = JsonConvert.DeserializeObject<RequestDto>(json);
+                            Console.WriteLine("收到命令：" + req.Command);
+
+                            // 解析嵌套的命令内容
+                            DataJson data = JsonConvert.DeserializeObject<DataJson>(req.Command);
+                            if (data != null && data.Type == "Ping")
+                            {
+                                Console.WriteLine("收到Ping:"+ data.Text);
+                                // 处理 Ping 逻辑
+                            }
+                            else if (data != null && data.Type == "EventEditor_Text")
+                            {
+                                XiaoMiaoICaMod p = new XiaoMiaoICaMod();
+                                p.Set_GUI_TextField_EventEditor_RunText(data.Text);
+                                if (p.Get_GUI_TextField_EventEditor_bool() == false)
+                                {
+                                    
+                                    // 执行哈语言
+                                    Task.Run(() =>
+                                    {
+                                        Task.Delay(5000);
+                                        run_HaLua(data.Text);
+                                    });
+                                }
+                            }
+
+                            var resp = new ResponseDto
+                            {
+                                Success = true,
+                                Message = "处理完成"
+                            };
+
+                            if (server.IsConnected)
+                            {
+                                writer.WriteLine(JsonConvert.SerializeObject(resp));
+                            }
                         }
-
-                        var resp = new ResponseDto
-                        {
-                            Success = true,
-                            Message = "处理完成"
-                        };
-
-                        writer.WriteLine(JsonConvert.SerializeObject(resp));
                     }
                 }
+                catch (IOException)
+                {
+                    Console.WriteLine("管道已断开，等待下一个连接...");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("未知异常：" + ex.Message);
+                }
             }
-
-            return true;
         }
 
         /// <summary>
@@ -2066,24 +2123,47 @@ EOF;
         /// <returns>无返回</returns>
         public void run_HaLua(string text)
         {
+            // 入口检查
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
             try
             {
+                // 获取反射字段
+                var fi = typeof(EV).GetField("Oevt_content",
+                    System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Public);
 
-                // 缓存到 EV.Oevt_content
-                var fi = typeof(EV).GetField("Oevt_content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-                var evtContent = (System.Collections.Generic.Dictionary<string, string>)fi.GetValue(null);
-                evtContent[text] = text;
-                Thread.Sleep(100);
-                // 创建事件读取器并解析执行
+                if (fi != null)
+                {
+                    var evtContent = fi.GetValue(null) as System.Collections.Generic.Dictionary<string, string>;
+
+                    // 检查是否可用
+                    if (evtContent != null)
+                    {
+                        evtContent[text] = text;
+                    }
+                }
+
+                // Thread.Sleep(100); 
+
+                // 创建事件读取器
                 EvReader ER = new EvReader(text, 0, null, null);
-                ER.parseText(text);
-                EV.stackReader(ER, -1);
-                
-                UnityEngine.Debug.Log("脚本执行完成: " + text);
+
+                if (ER != null)
+                {
+                    ER.parseText(text);
+                    EV.stackReader(ER, -1);
+                }
+
+                // UnityEngine.Debug.Log("脚本成功执行");
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                UnityEngine.Debug.LogError("执行脚本出错: " + ex);
+                UnityEngine.Debug.LogWarning("run_HaLua 内部已拦截异常");
             }
         }
 
@@ -2094,44 +2174,35 @@ EOF;
                 // 刷新文本
                 TX.reloadFontLetterSpace();
                 TX.reloadTx(true);
+                SND.Ui.play("saved", false);
 
                 // 音效
-                if (SND.Ui != null)
-                {
-                    SND.Ui.play("saved", false);
-                }
+                //if (SND.Ui != null)
+                //{
+                //    SND.Ui.play("saved", false);
+                //}
 
                 //地图场景
-                M2DBase instance = M2DBase.Instance;
-                if (instance != null)
-                {
-                    instance.DGN.ColCon.reload();
-                    instance.curMap.closeSubMaps(false);
-                    instance.curMap.openSubMaps();
-                    instance.curMap.fineSubMap();
-                    instance.curMap.drawUCol();
-                    instance.curMap.drawCheck(0f);
-                }
+                //M2DBase instance = M2DBase.Instance;
+                //if (instance != null)
+                //{
+                //    instance.DGN.ColCon.reload();
+                //    instance.curMap.closeSubMaps(false);
+                //    instance.curMap.openSubMaps();
+                //    instance.curMap.fineSubMap();
+                //    instance.curMap.drawUCol();
+                //    instance.curMap.drawCheck(0f);
+                //}
                 //刷新debug
-                X.loadDebug();
+                //X.loadDebug();
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"[GameReloader] 文本刷新出错: {e.Message}\n{e.StackTrace}");
+                UnityEngine.Debug.LogError($"[XiaoMiaoICa] 文本刷新出错: {e.Message}\n{e.StackTrace}");
             }
         }
 
-       
-        public class DataJson
-        {
-            public string Type { get; set; }
-            public string Text { get; set; }
-            public int Pid { get; set; }
-            public string Objective { get; set; }
-            public string EditorUrl { get; set; }
-            public string directory { get; set; }
-
-        }
+      
 
 
 
