@@ -121,6 +121,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             int count = 0;
             foreach (var method in harmony.GetPatchedMethods()) count++;
             XiaoMiaoICaMod.Instance.Logger.LogInfo($">>> 成功加载了 " + count + " 个补丁方法");
+
         }
 
         void Start()//启动
@@ -169,6 +170,51 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
             #endregion
             #region 导出dll和文件
+
+            if (File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "Newtonsoft.Json.dll")) == false)//导出Nwetonsoft.Json.dll
+            {
+                string dllPath = Path.Combine(Game_directory, "BepInEx", "plugins", "Newtonsoft.Json.dll");
+
+                Directory.CreateDirectory(Path.GetDirectoryName(dllPath));
+
+                using (Stream s = typeof(XiaoMiaoICaMod).Assembly.GetManifestResourceStream("Alice_in_Cradle_XiaoMiaoICa_of_Mod.DLL.Newtonsoft.Json.dll"))
+                using (FileStream f = File.Create(dllPath))
+                {
+                    if (s != null)
+                        s.CopyTo(f);
+                }
+                //重启游戏
+                {
+
+                    string exePath = Path.Combine(Game_directory, "AliceInCradle.exe");
+                    string gameDir = Path.GetDirectoryName(exePath);
+
+                    ProcessStartInfo startInfo = new ProcessStartInfo();
+                    startInfo.FileName = "cmd.exe";
+
+                    startInfo.Arguments = $"/C timeout /t 2 /nobreak & start \"\" \"{exePath}\"";
+
+                    startInfo.WorkingDirectory = gameDir;
+                    startInfo.CreateNoWindow = true;
+                    startInfo.UseShellExecute = false;
+
+                    startInfo.EnvironmentVariables.Remove("DOORSTOP_DISABLE");
+                    startInfo.EnvironmentVariables.Remove("DOORSTOP_INITIALIZED");
+                    startInfo.EnvironmentVariables.Remove("BEPINEX_BOOTSTRAP");
+
+                    try
+                    {
+                        Process.Start(startInfo);
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogError("重启失败: " + e.Message);
+                    }
+
+                    Process.GetCurrentProcess().Kill();
+                }
+            }
+
 
             var exportMap = new Dictionary<string, (string Dir, string OutputName)>
             {
