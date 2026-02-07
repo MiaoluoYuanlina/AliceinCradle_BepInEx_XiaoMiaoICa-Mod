@@ -8,7 +8,10 @@ using System.IO.Pipes;
 using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 
 class EventEditorModMiddleware
 {
@@ -16,8 +19,10 @@ class EventEditorModMiddleware
     {
         static int Game_PID = 0;
         static string Game_directory = "";
+        [STAThread]
         static void Main(string[] args)
         {
+
             //Start("chrome", "https://api.ica.wiki/AIC/EventEditor/");
             new Program().Receive("MiaoAicMod_EventEditor");
         }
@@ -148,10 +153,16 @@ class EventEditorModMiddleware
                 {
                     Headless = false,
                     Channel = Channel,
-                    SlowMo = 50,   
+                    SlowMo = 50,
+                    Args = new[] { "--start-maximized" }//最大化
                 }).Result;
 
-                var page = browser.NewPageAsync().Result;
+
+                // 创建页面
+                var page = browser.NewPageAsync(new BrowserNewPageOptions
+                {
+                    ViewportSize = ViewportSize.NoViewport // 移除 1280x720 限制
+                }).Result;
 
                 //输入框回调
                 page.ExposeFunctionAsync("onLanguageSubmit", (string[] values) =>
@@ -168,92 +179,95 @@ class EventEditorModMiddleware
                     switch (tag)
                     {
                         case "A":
-                            try
                             {
-                                await page.WaitForSelectorAsync("input#project");
-                                bool isChecked = await page.EvaluateAsync<bool>("() => document.getElementById('project').checked");
-
-                                if (isChecked)
+                                try
                                 {
-                                    await page.EvaluateAsync(@"() => {
+                                    await page.WaitForSelectorAsync("input#project");
+                                    bool isChecked = await page.EvaluateAsync<bool>("() => document.getElementById('project').checked");
+
+                                    if (isChecked)
+                                    {
+                                        await page.EvaluateAsync(@"() => {
                                 const cb = document.getElementById('project');
                                 if (!cb) return;
                                 cb.checked = false;
                                 cb.dispatchEvent(new Event('change', { bubbles: true }));
                             }");
-                                    Console.WriteLine("工程模式已关闭");
-                                }
+                                        Console.WriteLine("工程模式已关闭");
+                                    }
 
-                                string code = await page.EvaluateAsync<string>(@"
+                                    string code = await page.EvaluateAsync<string>(@"
 (() => {
     const ta = document.getElementById('codeArea');
     return ta ? ta.value : '';
 })();
 ");
 
-                                Console.WriteLine("codeArea 输入框内容：");
-                                Console.WriteLine(code);
+                                    Console.WriteLine("codeArea 输入框内容：");
+                                    Console.WriteLine(code);
 
-                                DataJson Json = new DataJson
+                                    DataJson Json = new DataJson
+                                    {
+                                        Type = "EventEditor_Text",
+                                        Text = code
+                                    };
+
+                                    new Program().Send("MiaoAicMod_Mod", JsonConvert.SerializeObject(Json, Formatting.Indented));
+
+                                }
+                                catch (Exception ex)
                                 {
-                                    Type = "EventEditor_Text",
-                                    Text = code
-                                };
+                                    Console.WriteLine($"操作异常: {ex.Message}");
+                                }
 
-                                new Program().Send("MiaoAicMod_Mod", JsonConvert.SerializeObject(Json, Formatting.Indented));
 
+
+                                break;
                             }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"操作异常: {ex.Message}");
-                            }
-
-
-
-                            break;
 
                         case "B":
-                            string code2 = "";
-                            try
                             {
-                                await page.WaitForSelectorAsync("input#project");
-                                bool isChecked = await page.EvaluateAsync<bool>("() => document.getElementById('project').checked");
-
-                                if (isChecked)
+                                string code2 = "";
+                                try
                                 {
-                                    await page.EvaluateAsync(@"() => {
+                                    await page.WaitForSelectorAsync("input#project");
+                                    bool isChecked = await page.EvaluateAsync<bool>("() => document.getElementById('project').checked");
+
+                                    if (isChecked)
+                                    {
+                                        await page.EvaluateAsync(@"() => {
                                 const cb = document.getElementById('project');
                                 if (!cb) return;
                                 cb.checked = false;
                                 cb.dispatchEvent(new Event('change', { bubbles: true }));
                             }");
-                                    Console.WriteLine("工程模式已关闭");
-                                }
+                                        Console.WriteLine("工程模式已关闭");
+                                    }
 
-                                string code = await page.EvaluateAsync<string>(@"
+                                    string code = await page.EvaluateAsync<string>(@"
 (() => {
     const ta = document.getElementById('codeArea');
     return ta ? ta.value : '';
 })();
 ");
 
-                                Console.WriteLine("codeArea 输入框内容：");
-                                Console.WriteLine(code);
-                                code2 = code;
+                                    Console.WriteLine("codeArea 输入框内容：");
+                                    Console.WriteLine(code);
+                                    code2 = code;
 
 
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"操作异常: {ex.Message}");
-                            }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"操作异常: {ex.Message}");
+                                }
 
 
 
 
-                            currentLanguageTcs = new TaskCompletionSource<string[]>();
+                                currentLanguageTcs = new TaskCompletionSource<string[]>();
 
-                            var result = await page.EvaluateAsync<dynamic>(@"
+                                var result = await page.EvaluateAsync<dynamic>(@"
 () => {
     const ws = Blockly.getMainWorkspace();
     if (!ws) return []; 
@@ -279,53 +293,53 @@ class EventEditorModMiddleware
     });
 }
 ");
-                            var blockList = (IEnumerable<dynamic>)result;
-                            foreach (var block in blockList)
-                            {
-                                // 判断是否是入口块
-                                if (block.type == "entrance")
+                                var blockList = (IEnumerable<dynamic>)result;
+                                foreach (var block in blockList)
                                 {
-                                    // 访问 values 下的 String_0 和 Bool_0
-                                    string eventId = block.values.String_0;
-                                    string isExportRaw = block.values.Bool_0; // 注意：Blockly 复选框通常返回字符串 "TRUE" 或 "FALSE"
-                                    // 进行你的业务判断
-                                    Console.WriteLine($"事件ID: {eventId}");
-                                    ExportToUtf8($"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\evt\\{eventId}.cmd", code2);
-                                    if (isExportRaw == "TRUE")
+                                    // 判断是否是入口块
+                                    if (block.type == "entrance")
                                     {
-                                        Console.WriteLine("对话单独导出已开启");
-                                        Console.WriteLine("获取单独对话内容");
+                                        // 访问 values 下的 String_0 和 Bool_0
+                                        string eventId = block.values.String_0;
+                                        string isExportRaw = block.values.Bool_0; // 注意：Blockly 复选框通常返回字符串 "TRUE" 或 "FALSE"
+                                                                                  // 进行你的业务判断
+                                        Console.WriteLine($"事件ID: {eventId}");
+                                        ExportToUtf8($"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\evt\\{eventId}.cmd", code2);
+                                        if (isExportRaw == "TRUE")
+                                        {
+                                            Console.WriteLine("对话单独导出已开启");
+                                            Console.WriteLine("获取单独对话内容");
 
-                                        await page.EvaluateAsync(@"
+                                            await page.EvaluateAsync(@"
 () => {
     const btn = document.querySelector('button[onclick=""compile()""]');
     if (btn) btn.click();
 }
 ");
 
-                                        string code = await page.EvaluateAsync<string>(@"
+                                            string code = await page.EvaluateAsync<string>(@"
 (() => {
     const ta = document.getElementById('codeArea');
     return ta ? ta.value : '';
 })();
 ");
 
-                                        Console.WriteLine("codeArea 输入框内容：");
-                                        Console.WriteLine(code);
+                                            Console.WriteLine("codeArea 输入框内容：");
+                                            Console.WriteLine(code);
 
-                                        Console.WriteLine("显示多语言编辑框。");
-                                        var tcs = new TaskCompletionSource<string[]>();
-                                        try
-                                        {
-                                            await page.ExposeFunctionAsync("onLanguageSubmit", (string[] values) =>
+                                            Console.WriteLine("显示多语言编辑框。");
+                                            var tcs = new TaskCompletionSource<string[]>();
+                                            try
                                             {
-                                                tcs.TrySetResult(values);
-                                            });
-                                        }
-                                        catch (Microsoft.Playwright.PlaywrightException ex) when (ex.Message.Contains("already registered"))
-                                        {
-                                        }
-                                        await page.EvaluateAsync(@"(code_init) => {
+                                                await page.ExposeFunctionAsync("onLanguageSubmit", (string[] values) =>
+                                                {
+                                                    tcs.TrySetResult(values);
+                                                });
+                                            }
+                                            catch (Microsoft.Playwright.PlaywrightException ex) when (ex.Message.Contains("already registered"))
+                                            {
+                                            }
+                                            await page.EvaluateAsync(@"(code_init) => {
     // 1. 清理旧弹窗
     const oldOverlay = document.getElementById('my-custom-overlay');
     if (oldOverlay) oldOverlay.remove();
@@ -455,49 +469,82 @@ class EventEditorModMiddleware
     switchLanguage(3);
 
 }", code);
-                                        //获取结果并打印
-                                        string[] userInputs = await currentLanguageTcs.Task;
-                                        Console.WriteLine("\n捕获到的内容：");
-                                        string[] labels = { "英语", "韩语", "泰语", "简中", "繁中", "日语" };
-                                        string[] languagePath = { "en", "ko-kr", "th", "zh-cn", "zh-tc", "_" };
-                                        for (int i = 0; i < userInputs.Length; i++)
-                                        {
-                                            Console.WriteLine($"[{labels[i]}] 内容长度: {userInputs[i].Length}");
-                                            Console.WriteLine(userInputs[i]); // 打印具体内容
+                                            //获取结果并打印
+                                            string[] userInputs = await currentLanguageTcs.Task;
+                                            Console.WriteLine("\n捕获到的内容：");
+                                            string[] labels = { "英语", "韩语", "泰语", "简中", "繁中", "日语" };
+                                            string[] languagePath = { "en", "ko-kr", "th", "zh-cn", "zh-tc", "_" };
+                                            for (int i = 0; i < userInputs.Length; i++)
+                                            {
+                                                Console.WriteLine($"[{labels[i]}] 内容长度: {userInputs[i].Length}");
+                                                Console.WriteLine(userInputs[i]); // 打印具体内容
 
 
-                                            ExportToUtf8( $"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\localization\\{languagePath[i]}\\ev_{Path.GetFileName(eventId)}.txt", userInputs[i]);
-                                            Console.WriteLine("-----------------------");
+                                                ExportToUtf8($"{Game_directory}\\AliceInCradle_Data\\StreamingAssets\\localization\\{languagePath[i]}\\ev_{Path.GetFileName(eventId)}.txt", userInputs[i]);
+                                                Console.WriteLine("-----------------------");
+                                            }
+
                                         }
-
+                                        else
+                                        {
+                                        }
+                                        // 如果你只需要处理 entrance 块，可以在处理完后 break
+                                        // break; 
                                     }
-                                    else
-                                    {
-                                    }
-                                    // 如果你只需要处理 entrance 块，可以在处理完后 break
-                                    // break; 
                                 }
+                                // 打印完整 JSON 供调试 (可选)
+                                // Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+                                break;
                             }
-                            // 打印完整 JSON 供调试 (可选)
-                            // Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-                            break;
-
-
 
                         case "C":
-                            Console.WriteLine("执行 C 逻辑");
-                            DataJson json = new DataJson
                             {
-                                Type = "EventEditor_Ping"
-                            };
+                                //Console.WriteLine("执行 C 逻辑");
 
-                            string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
+                                await page.WaitForSelectorAsync("input#project");
+                                bool isChecked = await page.EvaluateAsync<bool>("() => document.getElementById('project').checked");
 
-                            new Program().Send("MiaoAicMod_Mod", payload);
+                                if (!isChecked)
+                                {
+                                    await page.EvaluateAsync(@"() => {
+        const cb = document.getElementById('project');
+        if (!cb) return;
+        cb.checked = true; // 设置为 true
+        // 触发 change 事件以确保网页监听到状态改变
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+    }");
+                                    Console.WriteLine("工程模式已开启"); 
+                                }
+
+                                string code = await page.EvaluateAsync<string>(@"
+(() => {
+    const ta = document.getElementById('codeArea');
+    return ta ? ta.value : '';
+})();
+");
+
+                                Thread newThread = new Thread(() => {
+                                    PromptAndSaveFile(code, "");
+                                });
+                                newThread.SetApartmentState(ApartmentState.STA); // 强制设置为 STA
+                                newThread.Start();
+                                break;
+                            }
+                        case "D":
+                            {
+                                DataJson Json = new DataJson
+                                {
+                                    Type = "Ping",
+                                    Text = "来自MiaoAicMod_EventEditor"
+                                };
+
+                                new Program().Send("MiaoAicMod_Mod", JsonConvert.SerializeObject(Json, Formatting.Indented));
+
+                                break;
+                            }
 
 
 
-                            break;
                     }
                 }).Wait();
 
@@ -517,23 +564,19 @@ class EventEditorModMiddleware
 })();
 ").Wait();
 
-                // 再注入你自己的按钮
+                // 注入按钮
                 page.EvaluateAsync(@"
 (() => {
-    // 找到包含“导出对话”的那一行 p
     const targetP = Array.from(document.querySelectorAll('p'))
         .find(p => p.innerText.includes('导出对话'));
 
     if (!targetP) return;
 
-    // 防止重复注入
     if (document.getElementById('__csharp_btn_A__')) return;
 
-    // 新建一个 p（第二行）
     const newP = document.createElement('p');
     newP.id = '__csharp_toolbar__';
 
-    // 创建按钮的工厂
     const makeBtn = (id, text, tag) => {
         const btn = document.createElement('button');
         btn.id = id;
@@ -542,12 +585,12 @@ class EventEditorModMiddleware
         return btn;
     };
 
-    // 加入你的按钮
+    // 添加按钮
     newP.appendChild(makeBtn('__csharp_btn_A__', '执行', 'A'));
-    newP.appendChild(makeBtn('__csharp_btn_B__', '保存工程到指定文件夹', 'B'));
-    newP.appendChild(makeBtn('__csharp_btn_C__', '复制项目并保存到游戏', 'C'));
+    newP.appendChild(makeBtn('__csharp_btn_B__', '复制项目并保存到游戏', 'B'));
+    newP.appendChild(makeBtn('__csharp_btn_C__', '保存工程到指定文件夹', 'C'));
+    //newP.appendChild(makeBtn('__csharp_btn_D__', 'TestPing', 'D'));
 
-    // 插入到 targetP 的下一行（第二行）
     targetP.insertAdjacentElement('afterend', newP);
 })();
 ").Wait();
@@ -641,7 +684,181 @@ class EventEditorModMiddleware
 })();
 ").Wait();
 
+                //添加导入功能
+                page.EvaluateAsync(@"
+(() => {
+    // 1. 定位工具栏 (容器)
+    const toolbar = document.getElementById('__csharp_toolbar__');
+    if (!toolbar) return;
 
+    // 2. 定位要赋值的目标编辑框 (沿用上一个需求的 ID)
+    const textArea = document.getElementById('codeArea');
+    
+    // 3. 防止重复注入
+    if (document.getElementById('__small_dropzone__')) return;
+
+    // 4. 创建紧凑型拖拽区 (使用 label 标签以便利用行内属性)
+    const dropZone = document.createElement('label');
+    dropZone.id = '__small_dropzone__';
+    dropZone.innerText = '📂 拖入或点击读取文件';
+    
+    // 5. 设置样式：小巧、行内、虚线框
+    Object.assign(dropZone.style, {
+        display: 'inline-block',       // 和按钮排在同一行
+        marginLeft: '10px',            // 与左边按钮的间距
+        padding: '3px 8px',            // 内部填充尽可能小
+        border: '1px dashed #666',     // 虚线框表示这是拖拽区
+        borderRadius: '3px',
+        fontSize: '13px',              // 字体稍小
+        cursor: 'pointer',
+        backgroundColor: '#fff',
+        color: '#333',
+        verticalAlign: 'middle',       // 垂直对齐
+        transition: 'all 0.2s'
+    });
+
+    // 6. 创建隐藏的文件输入框
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.style.display = 'none';
+    dropZone.appendChild(fileInput);
+
+    // --- 核心逻辑 ---
+    const handleFile = (file) => {
+        if (!file || !textArea) {
+             if(!textArea) alert('未找到 id 为 codeArea 的编辑框！');
+             return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            textArea.value = e.target.result;
+            // 触发 React/Vue/Angular 可能需要的 input 事件
+            textArea.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // 成功提示特效
+            const oldText = dropZone.firstChild.textContent; // 保存旧文本
+            dropZone.firstChild.textContent = '✅ 读取成功 点击读取工程加载拼图';
+            dropZone.style.borderColor = 'green';
+            dropZone.style.color = 'green';
+            
+            setTimeout(() => {
+                dropZone.firstChild.textContent = oldText;
+                dropZone.style.borderColor = '#666';
+                dropZone.style.color = '#333';
+            }, 1500);
+        };
+        reader.readAsText(file);
+    };
+
+    // --- 事件监听 ---
+    
+    // 点击选择
+    fileInput.addEventListener('change', (e) => {
+        handleFile(e.target.files[0]);
+        fileInput.value = '';
+    });
+
+    // 拖拽进入
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '#e3f2fd'; // 变蓝
+        dropZone.style.borderColor = '#2196F3';
+    });
+
+    // 拖拽离开
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '#fff';
+        dropZone.style.borderColor = '#666';
+    });
+
+    // 放置文件
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '#fff';
+        dropZone.style.borderColor = '#666';
+        
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // 7. 插入到工具栏最后
+    toolbar.appendChild(dropZone);
+
+})();
+").Wait();
+
+                // 修改缩放
+                page.EvaluateAsync(@"
+(async () => {
+    // 1. 检查是否已经注入过样式，没有则注入
+    if (!document.getElementById('__custom_resize_style__')) {
+        const style = document.createElement('style');
+        style.id = '__custom_resize_style__';
+        style.innerHTML = `
+            #custom_modal_mask {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); display: flex; align-items: center;
+                justify-content: center; z-index: 9999;
+            }
+            #custom_modal_box {
+                background: white; padding: 20px; border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 300px; font-family: sans-serif;
+            }
+            #custom_modal_box h3 { margin-top: 0; font-size: 16px; color: #333; }
+            #custom_modal_box input {
+                width: 100%; box-sizing: border-box; padding: 8px;
+                margin: 10px 0; border: 1px solid #ccc; border-radius: 4px;
+            }
+            #custom_modal_btns { text-align: right; }
+            #custom_modal_btns button {
+                padding: 6px 12px; margin-left: 8px; cursor: pointer; border-radius: 4px; border: none;
+            }
+            .btn-confirm { background: #007bff; color: white; }
+            .btn-cancel { background: #6c757d; color: white; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. 创建并显示模态框
+    const mask = document.createElement('div');
+    mask.id = 'custom_modal_mask';
+    mask.innerHTML = `
+        <div id='custom_modal_box'>
+            <h3>设置画布尺寸</h3>
+            <input type='text' id='size_input' placeholder='宽度,高度 (如: 800,600)'>
+            <div id='custom_modal_btns'>
+                <button class='btn-cancel' onclick='document.getElementById(""custom_modal_mask"").remove()'>取消</button>
+                <button class='btn-confirm' id='btn_resize_confirm'>确认</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(mask);
+
+    // 3. 绑定确认逻辑
+    document.getElementById('btn_resize_confirm').onclick = () => {
+        const val = document.getElementById('size_input').value;
+        const parts = val.replace('，', ',').split(',').map(s => s.trim());
+        
+        if (parts.length === 2) {
+            const w = parts[0];
+            const h = parts[1];
+            const el = document.getElementById('blocklyDiv');
+            if (el) {
+                el.style.width = w + 'px';
+                el.style.height = h + 'px';
+                // 刷新 Blockly
+                if (window.Blockly) window.Blockly.svgResize(window.Blockly.getMainWorkspace());
+            }
+            mask.remove(); // 关闭模态框
+        } else {
+            alert('请输入正确的格式：宽,高');
+        }
+    };
+})();
+").Wait();
 
                 Console.WriteLine("界面已插入");
                 Console.WriteLine("点击回车关闭");
@@ -692,6 +909,37 @@ class EventEditorModMiddleware
             }
         }
 
+        /// <summary>
+        /// 弹出系统对话框并执行导出
+        /// </summary>
+        /// <param name="content">要保存的文本内容</param>
+        public static void PromptAndSaveFile(string content,string FillName)
+        {
+            // 使用 using 确保资源释放
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Title = "请选择保存位置";
+                sfd.Filter = "json文件 (*.json)|*.json|所有文件 (*.*)|*.*";
+                //sfd.FileName = DateTime.Now.ToString("yyyyMMdd");
+                sfd.FileName = FillName;
+
+                // 在静态方法中，不能使用 this。
+                // 直接调用 ShowDialog() 或者使用 Form.ActiveForm 寻找当前活动窗口
+                if (sfd.ShowDialog(Form.ActiveForm) == DialogResult.OK)
+                {
+                    try
+                    {
+                        // 确保你的 ExportToUtf8 也是 static 的，否则这里也会报错
+                        ExportToUtf8(sfd.FileName, content);
+                        MessageBox.Show("导出成功！");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"报错了: {ex.Message}");
+                    }
+                }
+            }
+        }
     }
 
 
