@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.Mono;
+
 //游戏dll引用
 using evt;//unsafeAssem.dll
 using HarmonyLib;
@@ -46,8 +47,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
     [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "2.2.1")]
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
-        #region DLL
-        #endregion
         #region 变量
 
         //定义为 Instance
@@ -137,7 +136,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Task.Run(() =>
             {
                 new EventEditor().Receive("MiaoAicMod_Mod");
-            });
+            });//启动服务
             
 
 
@@ -161,14 +160,6 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Logger.LogMessage("#XiaoMiaoICa: Game_PID:" + Game_PID);
             Logger.LogMessage("#XiaoMiaoICa: Game_directory:" + Game_directory);
 
-            #region 解压事件管理器
-            if (File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "EventEditorModMiddleware.exe")) == false)
-            {
-                Logger.LogMessage("解压事件管理器");
-                ExtractEmbeddedZip("Alice_in_Cradle_XiaoMiaoICa_of_Mod.Data.EventEditorModMiddleware.zip", Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa"));
-            }
-
-            #endregion
             #region 导出dll和文件
 
             if (File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "Newtonsoft.Json.dll")) == false)//导出Nwetonsoft.Json.dll
@@ -273,35 +264,13 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
 
             #endregion
-            #region 用户协议
-            string initext = "";
-            try
+            #region 解压事件管理器
+            if (File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "EventEditorModMiddleware.exe")) == false)
             {
-                initext = M_EF.Config_Read(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
+                Logger.LogMessage("解压事件管理器");
+                ExtractEmbeddedZip("Alice_in_Cradle_XiaoMiaoICa_of_Mod.Data.EventEditorModMiddleware.zip", Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa"));
+            }
 
-            }
-            catch
-            {
-                Logger.LogWarning("读取配置文件出错！");
-            }
-            if (initext == "true")
-            {
-                Logger.LogMessage("用户同意使用协议");
-                utilization_agreement = true;
-            }
-            else
-            {
-                Logger.LogWarning("用户未同意使用协议");
-                utilization_agreement = false;
-            }
-            if (utilization_agreement == true)
-            {
-                showWindow = true;
-            }
-            else
-            {
-                WindowsRect_utilization_agreement_showWindow = true;
-            }
             #endregion
             #region 读取配置文件
             if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic") == "True")
@@ -354,8 +323,49 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             //    GUI_Bool_ModDebug_Noel_info = true;
             //}
             #endregion
+            #region 用户协议
+            string initext = "";
+            try
+            {
+                initext = M_EF.Config_Read(Directory.GetCurrentDirectory() + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement");
+
+            }
+            catch
+            {
+                Logger.LogWarning("读取配置文件出错！");
+            }
+            if (initext == "true")
+            {
+                Logger.LogMessage("用户同意使用协议");
+                utilization_agreement = true;
+            }
+            else
+            {
+                Logger.LogWarning("用户未同意使用协议");
+                utilization_agreement = false;
+            }
+            if (utilization_agreement == true)
+            {
+                showWindow = true;
+            }
+            else
+            {
+                WindowsRect_utilization_agreement_showWindow = true;
+            }
+            #endregion
+            #region 循环
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(1000);
+                    time_1000ms();
+                }
+            });
+
+            #endregion
         }
-    
+
         void OnGUI()//绘制UI
         {
             if (showWindow)
@@ -369,13 +379,21 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             }
         }
 
-        void Update()//触发点击按键
+        void Update()//帧
         {
+            if (File.Exists(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd")) == true)
+            {
+
+                new EventEditor().run_HaLua(File.ReadAllText(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd")));
+                File.Delete(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd"));//删除文件
+            }
+
+            //触发点击按键
             if (Input.GetKeyDown(KeyCode.P))
             {
 
             }
-            //if (Input.GetKeyDown(KeyCode.Tab)) // 替换为你想要的快捷键
+            //if (Input.GetKeyDown(KeyCode.Tab)) // 替换快捷键
             //{
             //    showWindow = !showWindow; // 切换窗口显示状态
             //}
@@ -384,6 +402,23 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                 showWindow = !showWindow; // 切换窗口显示状态
             }
         }
+
+        void OnApplicationQuit()
+        {
+            Logger.LogInfo("游戏即将退出");
+        }
+
+        void time_1000ms()
+        {
+            if (File.Exists(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd")) == true)
+            {
+
+
+                new EventEditor().run_HaLua(File.ReadAllText(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd")));
+                File.Delete(Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "Temp_RunHa.cmd"));//删除文件
+
+            }
+        }//1秒执行一次
 
         public void WindowsFunc_utilization_agreement(int id)//控件_用户协议
         {
@@ -563,8 +598,10 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             {
                 Patch_X_LoadDebug.GameDeBug (true);
                 new EventEditor().run_HaLua(@"
-TX_BOARD <<<EOF 
-<c6>你想要返回主页面重新读档才能生效！
+TALKER n CCL 
+PIC   n a_1/a00L3R3__F1__f1__m1__b1__u1    
+MSG n_<<<EOF 
+<c6>你需要返回主页重新读档才会生效！
 EOF;
 ");
 
@@ -639,10 +676,12 @@ EOF;
             if (GUILayout.Button("启动事件管理器"))
             {
                 new EventEditor().run_HaLua(@"
-TX_BOARD <<<EOF 
+TALKER n CCL 
+PIC   n a_1/a00L3R3__F1__f1__m1__b1__u1    
+MSG n_<<<EOF 
 <c6>正在启动事件管理器
 <c6>等待几秒后会弹出浏览器窗口
-<c6>
+*
 <c2>事件管理器还在测试
 <c2>有可能会出现bug
 <c2>还请谅解~
@@ -1144,7 +1183,7 @@ EOF;
             GUILayout.BeginVertical(GUI.skin.box);//竖排
             GUILayout.Label("事件编辑器WebUi部分开发者:"); // 文字
             GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("b站")) // 按钮
+            if (GUILayout.Button("bilibili")) // 按钮
             {
                 Process.Start(new ProcessStartInfo("https://space.bilibili.com/399329257") { UseShellExecute = true });
             }
@@ -1200,11 +1239,19 @@ EOF;
         {
             return GUI_TextField_EventEditor_bool;
         }
-        public void Set_GUI_TextField_EventEditor_RunText(string value)
+        public void Set_GUI_TextField_EventEditor_RunText(string value)//设置事件编辑器哈语言文本框内容
         {
             GUI_TextField_EventEditor_RunText = value;
         }
 
+        public string Get_Game_directory()//获取游戏路径
+        {
+            return Game_directory;
+        }
+        public int Get_Game_PID()//获取游戏PID
+        {
+            return Game_PID;
+        }
 
         public static void SavepreferencesConfig()//保存配置
         {
@@ -1247,8 +1294,8 @@ EOF;
             }
         }
 
-        //解压嵌入的zip文件
-        public static void ExtractEmbeddedZip(string resourceName, string outputDir)
+        
+        public static void ExtractEmbeddedZip(string resourceName, string outputDir)//解压嵌入的zip文件
         {
             Assembly asm = Assembly.GetExecutingAssembly();
             Stream zipStream = asm.GetManifestResourceStream(resourceName);
@@ -1807,7 +1854,7 @@ EOF;
             }
         }
 
-
+        
     }
 
 
@@ -2009,18 +2056,6 @@ EOF;
             }
         }
 
-        public static int test(GameObject player = null)
-        {
-            if (player == null)
-            {
-                player = FindPlayer();
-            }
-
-
-            PRNoel pr = player.GetComponent<PRNoel>();
-            return (int)0;
-        }
-
     }
 
     
@@ -2068,7 +2103,6 @@ EOF;
                             Value = 123
                         };
 
-                        // 修复点 1: 使用 JsonConvert.SerializeObject 替代 JsonSerializer.Serialize
                         string jsonPayload = JsonConvert.SerializeObject(req);
                         writer.WriteLine(jsonPayload);
 
@@ -2097,7 +2131,7 @@ EOF;
                         Objective,
                         PipeDirection.InOut,
                         1,
-                        PipeTransmissionMode.Byte)) // 注意：StreamReader 通常配合 Byte 模式更稳定
+                        PipeTransmissionMode.Byte))
                     {
                         server.WaitForConnection();
 
@@ -2111,7 +2145,6 @@ EOF;
                                 continue;
                             }
 
-                            // 修复点 2: 使用 JsonConvert.DeserializeObject 替代 JsonSerializer.Deserialize
                             var req = JsonConvert.DeserializeObject<RequestDto>(json);
                             Console.WriteLine("收到命令：" + req.Command);
 
@@ -2124,19 +2157,25 @@ EOF;
                             }
                             else if (data != null && data.Type == "EventEditor_Text")
                             {
+
                                 XiaoMiaoICaMod p = new XiaoMiaoICaMod();
                                 p.Set_GUI_TextField_EventEditor_RunText(data.Text);
                                 if (p.Get_GUI_TextField_EventEditor_bool() == false)
                                 {
-                                    
+
                                     // 执行哈语言
                                     Task.Run(() =>
                                     {
-                                        Task.Delay(5000);
-                                        run_HaLua(data.Text);
+                                        string path = Path.Combine(XiaoMiaoICaMod.Instance.Get_Game_directory(),"XiaoMiaoICa_Mod_Data","Temp_RunHa.cmd");
+                                        new EventEditor().ForceReloadText();
+                                        //Task.Delay(5000);
+                                        M_EF.ExportToUtf8(path, data.Text);
+
+                                        int PID = XiaoMiaoICaMod.Instance.Get_Game_PID();
                                     });
                                 }
                             }
+                            
 
                             var resp = new ResponseDto
                             {
@@ -2246,16 +2285,16 @@ EOF;
             {
                 UnityEngine.Debug.LogError($"[XiaoMiaoICa] 文本刷新出错: {e.Message}\n{e.StackTrace}");
             }
-        }
+        }//刷新文本
 
       
-
-
-
     }
 
     public class M_EF    //Extended functionality
     {
+        #region DLL
+        #endregion
+
         /// <summary>
         /// 写入配置文件
         /// </summary>
@@ -2265,8 +2304,8 @@ EOF;
         /// <returns>操作是否成功</returns>
         public static bool Config_Write(string filePath, string configName, string content)
         {
-            
-            
+
+
             try
             {
                 Dictionary<string, string> configDict;
@@ -2330,5 +2369,37 @@ EOF;
 
         }
 
+        /// <summary>
+        /// 强制以 UTF-8 编码导出文件
+        /// </summary>
+        /// <param name="filePath">完整的保存路径 (例如: @"D:\Exports\English.txt")</param>
+        /// <param name="content">要保存的字符串内容</param>
+        public static void ExportToUtf8(string filePath, string content)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(filePath)) throw new ArgumentException("路径不能为空");
+
+                // 获取目录信息并确保目录存在
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                // 使用 UTF-8 编码（不带 BOM）写入文件
+                Encoding utf8 = new UTF8Encoding(false);
+
+                File.WriteAllText(filePath, content, utf8);
+
+                Console.WriteLine($"文件已保存至: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"路径: {filePath}");
+                Console.WriteLine($"错误原因: {ex.Message}");
+            }
+        }
+        
     }
 }
+
