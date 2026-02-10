@@ -3,8 +3,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Text.Json;
@@ -15,6 +17,22 @@ using static System.Net.Mime.MediaTypeNames;
 
 class EventEditorModMiddleware
 {
+    // --- Windows API 导入 ---
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    // 常量定义
+    private const int SW_RESTORE = 9;
+    private const byte VK_MENU = 0x12; // Alt 键
+    private const uint KEYEVENTF_KEYUP = 0x02;
+
+
     internal class Program
     {
         static int Game_PID = 0;
@@ -213,6 +231,9 @@ class EventEditorModMiddleware
                                     };
 
                                     new Program().Send("MiaoAicMod_Mod", JsonConvert.SerializeObject(Json, Formatting.Indented));
+
+                                    await Task.Delay(500);
+                                    BringToFront(Game_PID);
 
                                 }
                                 catch (Exception ex)
@@ -939,6 +960,28 @@ class EventEditorModMiddleware
                     }
                 }
             }
+        }
+
+
+        /// <summary>
+        /// 根据进程 PID 激活并置顶窗口
+        /// </summary>
+        /// <param name="pid">进程的 ID</param>
+        /// <returns>是否成功找到并尝试激活</returns>
+        public static void BringToFront(int pid)
+        {
+            Process proc = Process.GetProcessById(pid);
+            IntPtr handle = proc.MainWindowHandle;
+
+            if (handle == IntPtr.Zero) return;
+
+            ShowWindow(handle, SW_RESTORE);
+
+            keybd_event(VK_MENU, 0, 0, 0);
+
+            SetForegroundWindow(handle);
+
+            keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
         }
     }
 
