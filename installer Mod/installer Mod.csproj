@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -24,7 +25,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -51,7 +51,7 @@
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\AliceInCradle\BepInEx\plugins\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>5</WarningLevel>
+    <WarningLevel>4</WarningLevel>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
@@ -75,23 +75,12 @@
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\AliceInCradle_BepInEx5\BepInEx\core\0Harmony.dll</HintPath>
-    </Reference>
-    <Reference Include="0Harmony20">
-      <HintPath>..\AliceInCradle_BepInEx5\BepInEx\core\0Harmony20.dll</HintPath>
-    </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>..\AliceInCradle_BepInEx5\BepInEx\core\BepInEx.dll</HintPath>
-    </Reference>
-    <Reference Include="BepInEx.Harmony">
-      <HintPath>..\AliceInCradle_BepInEx5\BepInEx\core\BepInEx.Harmony.dll</HintPath>
-    </Reference>
-    <Reference Include="BepInEx.Preloader">
-      <HintPath>..\AliceInCradle_BepInEx5\BepInEx\core\BepInEx.Preloader.dll</HintPath>
-    </Reference>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.4.369, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
       <HintPath>..\packages\ICSharpCode.SharpZipLib.dll.0.85.4.369\lib\net20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.IWshRuntimeLibrary, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Interop.IWshRuntimeLibrary.1.0.1\lib\net45\Interop.IWshRuntimeLibrary.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -157,19 +146,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="file\AliceInCradle_Miao_Mod_Dll.dll" />
+    <EmbeddedResource Include="file\AliceInCradle_Miao_Mod_Dll.dll" />
+    <EmbeddedResource Include="file\Newtonsoft.Json.dll" />
     <Content Include="WEPE.ICO" />
-  </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="IWshRuntimeLibrary">
-      <Guid>{F935DC20-1CF0-11D0-ADB9-00C04FD58A0B}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

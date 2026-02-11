@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,13 +22,15 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 
 
+
+
 namespace installer_Mod
 {
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "4718959462136daa01c5315c254ad409";
-        readonly string OFFLINE_BPEEX_MOD5 = "f34c5c5df840f0e8667da9dd85bf9e15";
+        readonly string OFFLINE_MOD_MOD5 = "8ba9e5ea8a3bff5d45f6fc6ddf1db8a2";
+        readonly string OFFLINE_BPEEX_MOD5 = "2afe8b0fe5ecdf43c772ebe90762a5dd";
         readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/752/BepInEx-Unity.Mono-win-x64-6.0.0-be.752%2Bdd0655f.zip";
         readonly string ONLINE_MD5_BEPEX = "2afe8b0fe5ecdf43c772ebe90762a5dd";
         readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
@@ -45,6 +47,45 @@ namespace installer_Mod
         static bool abort(int return_int)//结束程序
         {
             DeletePath(Directory.GetCurrentDirectory() + "/Temp");//删除Temp文件夹
+
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string dllName = "Newtonsoft.Json.dll";
+                string cmdPath = Path.Combine(baseDir, "delete_json.cmd");
+
+                string cmdContent = $@"
+@echo off
+setlocal
+set DLL={dllName}
+set ME=%~f0
+
+:loop
+if not exist %DLL% goto cleanup
+
+del /f /q %DLL% >nul 2>nul
+if exist %DLL% (
+    timeout /t 1 /nobreak >nul
+    goto loop
+)
+
+:cleanup
+start """" cmd /c del /f /q ""%ME%""
+exit
+";
+
+                System.IO.File.WriteAllText(cmdPath, cmdContent);
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"\" \"{cmdPath}\"",
+                    UseShellExecute = true,
+                    CreateNoWindow = true
+                });
+            }
+
+
+
             if (return_int != 0)
             {
                 if (return_int == 1)
@@ -134,7 +175,7 @@ namespace installer_Mod
             }
             WriteLine_color("运行结束！", ConsoleColor.Green);
 
-            Thread.Sleep(10000);
+            Thread.Sleep(3000);
             Environment.Exit(return_int);
             WriteLine_color("自动退出！", ConsoleColor.Green);
             return true;
@@ -693,6 +734,37 @@ namespace installer_Mod
 
             }
             #endregion
+            #region 导出DLL
+
+            {
+                string DLL_directory = AppDomain.CurrentDomain.BaseDirectory;
+                
+                string dllPath = Path.Combine(DLL_directory, "Newtonsoft.Json.dll");
+
+                if (!System.IO.File.Exists(dllPath)) // 导出 Newtonsoft.Json.dll
+                {
+                    string dir = Path.GetDirectoryName(dllPath);
+
+                    if (!Directory.Exists(dir))
+                        Directory.CreateDirectory(dir);
+
+                    using (Stream s = typeof(Program).Assembly
+                        .GetManifestResourceStream("installer_Mod.file.Newtonsoft.Json.dll"))
+                    {
+                        if (s == null)
+                        {
+                            Console.WriteLine("未找到嵌入资源 installer_Mod.file.Newtonsoft.Json.dll");
+                            return;
+                        }
+
+                        using (FileStream f = new FileStream(dllPath, FileMode.Create, FileAccess.Write))
+                        {
+                            s.CopyTo(f);
+                        }
+                    }
+                }
+            }
+            #endregion
             #region 声明
             string[] lines = {
             "",
@@ -1105,7 +1177,7 @@ namespace installer_Mod
             else
             {
                 CreatePath(Directory.GetCurrentDirectory() + "/Temp");
-                if (ExportEmbedResources("file.BepInEx-Unity.Mono-win-x64-6.0.0-be.752+dd0655f.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
+                if (ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
                 {
                     WriteLine_color("BepExMD5导出成功！", ConsoleColor.Blue);
                 }
@@ -1185,4 +1257,3 @@ namespace installer_Mod
         }
     }
 }
-
