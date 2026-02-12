@@ -249,15 +249,32 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
                 Directory.CreateDirectory(exportDir);
 
+                resourceFile = "Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile;
+
                 if (File.Exists(targetPath))
                 {
-                    Console.WriteLine($"文件已存在：{targetPath}");
+                    //Console.WriteLine($"文件已存在：{targetPath}");
                 }
                 else
                 {
                     Console.WriteLine($"导出 {resourceFile} → {targetPath}");
 
-                    string result = M_EF.Config_Read("Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile,targetPath);
+                    var assembly = typeof(XiaoMiaoICaMod).Assembly; // 如果是BepInEx插件建议这样
+
+                    using (Stream stream = assembly.GetManifestResourceStream(resourceFile))
+                    {
+                        if (stream == null)
+                        {
+                            Console.WriteLine($"找不到资源：{resourceFile}");
+                            continue;
+                        }
+
+                        using (FileStream fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        {
+                            stream.CopyTo(fs);
+                        }
+                    }
+
                 }
             }
 
@@ -406,7 +423,16 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         void OnApplicationQuit()
         {
             Logger.LogInfo("游戏即将退出");
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/C timeout /t 5 /nobreak >nul && taskkill /PID {Game_PID} /F",
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
         }
+
 
         void time_1000ms()
         {
@@ -2398,7 +2424,7 @@ EOF;
                 Console.WriteLine($"路径: {filePath}");
                 Console.WriteLine($"错误原因: {ex.Message}");
             }
-        }
+        }       
         
     }
 }
