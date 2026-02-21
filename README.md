@@ -17,8 +17,8 @@ Mod信息
 [![GitHub Mod 源代码](https://img.shields.io/badge/github-Mod源代码-fffbff?logo=GitHub)](https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod)
 [![GitHub Mod 源代码](https://img.shields.io/badge/gitee-Mod源代码-d90013?logo=Gitee)](https://gitee.com/wu-suowei_xiaomiao/AliceinCradle_BepInEx_XiaoMiaoICa-Mod)
 
-公开全部玩家运行日志
-https://api.xiaomiaoica.wiki/AIC/log/log.php
+公开全部玩家安装日志
+https://api.xiaomiaoica.wiki/AIC/log2/log.php
 
 官网
 https://xiaomiaoica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/
