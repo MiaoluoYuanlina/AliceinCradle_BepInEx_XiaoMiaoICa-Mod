@@ -967,6 +967,8 @@ EOF;
 
             GUILayout.Label("模型名:");
             GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List]);
+            GUILayout.Space(5);
+            GUILayout.Label("\n请勿滥用公共APIkey！本苗会看情况在有空余财力对公共AIP密钥进行续费。", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(1.0f, 0.2f, 0.0f) } });
 
             GUILayout.EndVertical();
 
@@ -2409,7 +2411,7 @@ EOF;
         /// <returns>无返回</returns>
         public void run_HaLua(string text)
         {
-            // 把字符串转成 Base64 打印出来
+            // 把字符串转成 Base64
             //Console.WriteLine(System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text)));
             text = text.Replace("\r\n", "\n").Replace("\r", "\n");//格式化字符
             //Console.WriteLine(System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text)));
