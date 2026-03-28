@@ -8,7 +8,8 @@ using HarmonyLib;
 using m2d;
 using Microsoft.Extensions.Logging;
 using nel; //Assembly-CSharp.dll
-using Newtonsoft.Json;
+using XX;
+//
 using System;
 using System.ClientModel;
 using System.Collections;
@@ -26,6 +27,7 @@ using System.Runtime.InteropServices;
 using System.Security.Policy;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -33,7 +35,9 @@ using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI; 
-using XX;
+using Newtonsoft.Json;
+using Octokit;
+//
 using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.AI_Chat;
 using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.EventEditor;
 using static evt.EvDrawerContainer;
@@ -83,6 +87,9 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private static bool GUI_Bool_BanMosaic = false; // 开关_禁用马赛克
         private static bool GUI_Bool_BanMosaic2 = false; // 开关_禁用马赛克
 
+
+        private static bool GUI_Bool_AliceTranslation = false; // 开关_矮人语翻译
+
         private static bool GUI_Bool_NOApplyDamage = false; // 开关_免疫伤害
         private static bool GUI_Bool_NOApplyDamage2 = false; // 开关_不受伤害
 
@@ -112,6 +119,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private static string[] GUI_TextField_AIChat_API_url = { "https://tbnx.plus7.plus/v1/chat/completions", "", "", "", "", "", "", "", "", "", "" };//设置url
         private static string[] GUI_TextField_AIChat_API_key = { "sk-h774hLmsrfO03ZIIxBAqC18BgfxAWhynii10y57bPmVV9iBO", "", "", "", "", "", "", "", "", "", "" };//设置key
         private static string[] GUI_TextField_AIChat_API_model = { "gpt-5-mini", "gpt-5-mini", "gpt-5-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini" };//设置模型
+        private static bool[] GUI_Bool_AIChat_API_Switch = {true, true, true, true, true, true, true, true, true, true, true };//是否启用
         private static string GUI_TextField_AIChat_ChatContent = "你好";//聊天内容
         private static string[] GUI_Text_AIChat_Tip_State = { "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null" };//提示状态
         private static string[] GUI_Text_AIChat_Tip_State_Color = { "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" };//提示状态颜色
@@ -284,7 +292,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                             continue;
                         }
 
-                        using (FileStream fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        using (FileStream fs = new FileStream(targetPath, System.IO.FileMode.Create, FileAccess.Write))
                         {
                             stream.CopyTo(fs);
                         }
@@ -560,6 +568,31 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             GUILayout.Label("被马赛克修改过的图片修改的图是指CG。哈酱在把画完的CG放进游戏的时候，马赛克已经被涂在游戏CG上了，所以这是不可逆的。"); // 文字
             GUILayout.Label("所以本苗只能手绘，或者使用AI，但是我还没弄明白怎么用AI去除涩图上的马赛克。现在看来就只能进行手绘了，我也没什么绘画技术，只能先凑合用吧。目前我只手绘了少量图片馁，并没有覆盖游戏的全部CG，毕竟时间画技有限。"); // 文字
             GUILayout.EndHorizontal(); 
+            GUILayout.EndHorizontal();
+            #endregion
+
+            #region 矮人语翻译
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+            GUILayout.BeginVertical();//竖排
+            GUI_Bool_AliceTranslation = GUILayout.Toggle(GUI_Bool_AliceTranslation, "翻译矮人语");
+            GUILayout.Label("翻译矮人语"); // 文字
+            if (GUILayout.Button("Git")) // 按钮
+            {
+                string url = "https://github.com/Muki0607/DwarfInCradleTranslation.git";
+                string saveLocation = @"D:\DwarfInCradleTranslation_Latest.zip";
+
+                try
+                {
+                    string version = Git.GetLatestVersionAsync(url).GetAwaiter().GetResult();
+
+                    Console.WriteLine($"test: {version}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"更新失败: {ex.Message}");
+                }
+            }
+            GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
             #endregion
 
@@ -955,6 +988,10 @@ EOF;
             {
                 GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』未知");
             }
+            GUILayout.Space(5);
+
+            GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List] = GUILayout.Toggle(GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List], "是否启用");
+
             GUILayout.Space(5);
 
             GUILayout.Label("请求的URL:");
@@ -1442,9 +1479,13 @@ EOF;
             GUI_Text_AIChat_Tip_State_Color[entry] = State_Color;
             GUI_Text_AIChat_Tip_Content[entry] = Content;
         }
-        public void Set_GUI_Text_AIChat_Loading(bool Loading)
+        public void Set_GUI_Text_AIChat_Loading(bool Loading)//设置AI对话界面是否处于加载中状态
         {
             GUI_AIChat_Loading = Loading;
+        }
+        public bool Get_GIU_Bool_AIChat_Shitch(int i)
+        {
+            return GUI_Bool_AIChat_API_Switch[i];
         }
         public string Get_Game_directory()//获取游戏路径
         {
@@ -1496,7 +1537,13 @@ EOF;
             }
         }
 
-        
+
+        public bool GetHub_Update_AliceTranslation()//获取事件编辑器不直接执行哈语言选项
+        {
+
+            return true;
+        }
+
         public static void ExtractEmbeddedZip(string resourceName, string outputDir)//解压嵌入的zip文件
         {
             Assembly asm = Assembly.GetExecutingAssembly();
@@ -1521,7 +1568,7 @@ EOF;
                     Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
 
                     using (Stream entryStream = entry.Open())
-                    using (FileStream fs = new FileStream(fullPath, FileMode.Create))
+                    using (FileStream fs = new FileStream(fullPath, System.IO.FileMode.Create))
                     {
                         entryStream.CopyTo(fs);
                     }
@@ -1802,6 +1849,135 @@ EOF;
             public static void Postfix()
             {
                 XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.ActiveDebugger.runIRD 后置成功命中");
+            }
+        }
+
+        [HarmonyPatch] //   监听游戏XX.TX.readTextsAt方法 读取语言文件
+        public static class XX_TX_readTextsAt_Patch
+        {
+            [HarmonyTargetMethod]// 目标
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(TX), "readTextsAt", new Type[] { typeof(string) });
+            }
+            [HarmonyPrefix]// 前置
+            public static bool Prefix(string key)
+            {
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.TX.readTextsAt 前置成功命中 拦截此方法执行"); 
+                
+
+
+                // 1. 反射获取私有静态字段 OTxFam
+                var OTxFamField = AccessTools.Field(typeof(TX), "OTxFam");
+                var OTxFamValue = OTxFamField.GetValue(null) as IDictionary;
+
+                // 2. 反射获取私有静态方法 readTexts
+                var readTextsMethod = AccessTools.Method(typeof(TX), "readTexts", new Type[] { typeof(string), typeof(TX.TXFamily) });
+
+                if (OTxFamValue == null || readTextsMethod == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError("无法反射获取 OTxFam 或 readTexts 方法！");
+                    return true; // 反射失败则运行原逻辑
+                }
+
+                bool flag = false;
+                if (TX.isStart(key, "!", 0))
+                {
+                    flag = true;
+                    key = TX.slice(key, 1);
+                }
+
+                // 3. 遍历 OTxFam
+                foreach (DictionaryEntry entry in OTxFamValue)
+                {
+                    string langKey = entry.Key as string;
+                    TX.TXFamily family = entry.Value as TX.TXFamily;
+
+                    if (!flag || langKey == "_")
+                    {
+                        // 构建路径: localization/zh/zhItems.txt (假设 key 是 Items)
+                        string folderPath = Path.Combine("localization", langKey);
+                        string fileName = langKey + key + ".txt";
+                        string fullPath = Path.Combine(folderPath, fileName);
+
+
+                        XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] Key=" + key + "    " + fileName);
+                        if (fileName == "ev_mountain.txt")
+                        {
+                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
+                        }
+                        if (fileName == "ev_s107.txt")
+                        {
+                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
+                        }
+                        if (fileName == "ev_s200.txt")
+                        {
+                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
+                        }
+                        if (fileName == "ev_s210.txt")
+                        {
+                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
+                        }
+
+
+                        // 读取文件
+                        string text = NKT.readStreamingText(fullPath, !X.DEBUG || !X.DEBUGANNOUNCE);
+
+                        if (!TX.noe(text))
+                        {
+
+                            // 执行私有方法 readTexts(text, family)
+                            //readTextsMethod.Invoke(null, new object[] { text, family });
+                            //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成功加载自定义路径: " + fullPath);
+                        }
+                    }
+                }
+
+
+
+
+                return true;
+            }
+            //[HarmonyPostfix]// 后置
+            public static void Postfix(MosaicShower __instance)
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    //UnityEngine.Debug.Log(">>> [XiaoMiaoMod] XX.TX.readTextsAt 成功命中！");
+
+                }
+
+            }
+        }
+
+        [HarmonyPatch] // 监听游戏XX.TX.readTexts方法 用于修改语言文件读取逻辑
+        public static class XX_TX_readTexts_Patch
+        {
+            [HarmonyTargetMethod]// 目标
+            static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(XX.TX), "readTexts", new Type[] {
+                typeof(string),
+                typeof(TX.TXFamily)
+                });
+            }
+            [HarmonyPrefix]// 前置
+            public static bool Prefix(ref string LT, TX.TXFamily Fam)
+            {
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] LT=" + LT);
+                LT = LT.Replace("找到你了", "MOD注入测试");
+                LT = LT.Replace("开始游戏", "MOD注入测试");
+                return true;
+            }
+            [HarmonyPostfix]// 后置
+            public static void Postfix(MosaicShower __instance)
+            {
+                if (GUI_Bool_NOApplyDamage == true)
+                {
+                    //UnityEngine.Debug.Log(">>> [XiaoMiaoMod] Prefix 成功命中！");
+
+                }
+
             }
         }
 
@@ -2260,7 +2436,6 @@ EOF;
 
     }
 
-    
     public class EventEditor
     {
 
@@ -2497,7 +2672,6 @@ EOF;
       
     }
 
-
     public class AI_Chat
     {
         // 将 HttpClient 设为全局静态只读，防止 Socket 耗尽
@@ -2641,20 +2815,18 @@ P(PIC   n a_1/{肢体动作}__{立绘模板}__{脸部动作})
 //如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要使用（要看，要玩类词语）则返直接返回null
 //如果提到了 香草茶树 直接返回 ALCHEMY_COFFEEMAKER
 
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要打开界面 - API网络请求:正在执行", "#FFB6C1", "", 2 + 3);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换法杖 - API网络请求:正在执行", "#FFB6C1", "", 2 + 4);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否启动四子棋 - API网络请求:正在执行", "#FFB6C1", "", 2 + 5);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予物品 - API网络请求:正在执行", "#FFB6C1", "", 2 + 6);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要改危险度 - API网络请求:正在执行", "#FFB6C1", "", 2 + 7);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予金币 - API网络请求:正在执行", "#FFB6C1", "", 2 + 8);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换音乐 - API网络请求:正在执行", "#FFB6C1", "", 2 + 9);
                 //Console.WriteLine("准备并行执行同步方法...");
                 //Console.WriteLine($"[处理]: 是否要打开界面 模型{model[3]}");
                 //Console.WriteLine($"[处理]: 是否要切换法杖 模型{model[4]}");
                 //Console.WriteLine($"[处理]: 是否启动四子棋 模型{model[5]}");
 
                 Task<string> taskA = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+                    int ID = 3;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要打开界面 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要使用（打开）则返直接返回null
 
@@ -2684,14 +2856,25 @@ UI_GUILDQUEST city
 UI_GUILDQUEST city 1
 如果提到了 等待商人 界面直接返回 
 WAIT_NIGHTINGALE
-
-", url[3], apiKey[3], model[3]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要打开界面 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 3);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要打开界面 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
 
                 Task<string> taskB = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 4;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换法杖 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要使用（要看，要玩类词语）则返直接返回null
 提到了切换法杖是执行
@@ -2707,24 +2890,46 @@ hammer
 sleipner
 如果提到了 独占者 直接返回 
 monopolizer
-", url[4], apiKey[4], model[4]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换法杖 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 4);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换法杖 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
 
                 Task<string> taskC = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 5;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否启动四子棋 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要使用（要看，要玩类词语）则返直接返回null
 
 提到了要玩四子棋就直接返回 4A()
-", url[5], apiKey[5], model[5]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否启动四子棋 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 5);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否启动四子棋 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
 
                 Task<string> taskD = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 6;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予物品 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!{}是给你看的，不用返回{}。
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要（类词语）则返直接返回null
 
@@ -2883,35 +3088,69 @@ G({物品id} {数量} {品质})
 [""空瓶收纳槽"",""workbench_bottle""],
 [""背包扩容"",""workbench_capacity""]
 
-", url[6], apiKey[6], model[6]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予物品 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 6);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予物品 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
 
                 Task<string> taskE = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 7;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要改危险度 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要修改（设置类词语）则返直接返回null
 
 如果提到了要改危险度就直接返回阿拉伯数字，未提到就返回null。
-", url[7], apiKey[7], model[7]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要改危险度 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 7);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要改危险度 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
+
                 });
 
                 Task<string> taskF = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 8;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予金币 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要给我（增加类词语）则返直接返回null
 
 如果提到了要给玩家金币货币的相关词语直接用阿拉伯数字返回要给玩家的金币数量，未提到就返回null。
-", url[8], apiKey[8], model[8]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予金币 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 8);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要给予金币 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
 
                 Task<string> taskG = Task.Run(() => {
-                    string result = AI_dialogue_stream(prompt, @"
+
+                    int ID = 9;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换音乐 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+                        string result = AI_dialogue_stream(prompt, @"
 严格按照以下格式返回内容!
 如果给你的内容跟一下内外无关（给你谓词中没有处理方法），或提到了相关内容但未提到要切换（设置，修改类词语）则返直接返回null
 {}是给你看的，不用返回{}
@@ -2983,9 +3222,15 @@ B({音效ID})
 [""保卫战在即"",""gaya_106""],
 [""校园保卫战"",""towerdefence""],
 [""初遇幽灵（不循环）"",""nusi_meet_ghost""]
-", url[9], apiKey[9], model[9]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换音乐 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 9);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("是否要切换音乐 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }
+                    else
+                    {
+                        return "未启用";
+                    }
+                    return null;
                 });
                 
 
@@ -3009,9 +3254,12 @@ B({音效ID})
 
             // 正常对话获取内容
             //Console.WriteLine($"[处理]: 对话回复 模型{model[0]}");
-            XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:正在执行", "#FFB6C1", "",2 + 0);
-            string reply_A = await Task.Run(() =>
-            AI_dialogue_stream(prompt, $@"
+            string reply_A = "";
+            if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(0) == true)
+            {
+                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:正在执行", "#FFB6C1", "", 2 + 0);
+                reply_A = await Task.Run(() =>
+                AI_dialogue_stream(prompt, $@"
 你扮演的是游戏alice in cradle里的角色诺艾尔，你要以诺艾尔的口吻来回答问题，回答内容要符合诺艾尔的性格特点和说话风格。
 
 人设:
@@ -3033,12 +3281,15 @@ alice in cradle的女主角，家中第四子。
 是否要切换音乐: {reply_M}
 
 ", url[0], apiKey[0], model[0])
-            );
-            XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:空闲 执行完成", "#87CEEB", reply_A, 2 + 0);
+                );
+                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:空闲 执行完成", "#87CEEB", reply_A, 2 + 0);
+            }
+
+                
 
             //分行处理避免装不下输入框
             string reply_B = WrapText(reply_A, 999);
-            XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:空闲 执行完成", "#87CEEB", reply_B, 2 + 0);
+            //XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("获取对话 - API网络请求:空闲 执行完成", "#87CEEB", reply_B, 2 + 0);
 
 
 
@@ -3046,22 +3297,37 @@ alice in cradle的女主角，家中第四子。
             string reply_C = "";
             string reply_E = "";
             {
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("文字添加彩色转义符 - API网络请求:正在执行", "#FFB6C1", "", 2 + 1);
-                XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("生成立绘代码 - API网络请求:正在执行", "#FFB6C1", "", 2 + 2);
                 //Console.WriteLine("准备并行执行同步方法...");
                 //Console.WriteLine($"[处理]: 处理彩色文字 模型{model[1]}");
                 //Console.WriteLine($"[处理]: 生成立绘代码 模型{model[2]}");
 
                 Task<string> taskA = Task.Run(() => {
-                    string result = AI_dialogue_stream(reply_B, @"
+                    int ID = 1;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("文字添加彩色转义符 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+
+                        string result = AI_dialogue_stream(reply_B, @"
 对文字进行处理，对关键词的左侧添加颜色代码并返回，只返回要返回的内容，尽量少使用黄色因为与背景色冲突。颜色字符：<c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
-", url[1], apiKey[1], model[1]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("文字添加彩色转义符 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 1);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("文字添加彩色转义符 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+
+                        return result;
+                    }
+                    else
+                    {
+                        return reply_B;
+                    }
+                    return null;
                 });
                 
                 Task<string> taskB = Task.Run(() => {
-                    string result = AI_dialogue_stream(reply_B, @"
+                    int ID = 2;
+                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("生成立绘代码 - API网络请求:正在执行", "#FFB6C1", "", 2 + ID);
+                    if (XiaoMiaoICaMod.Instance.Get_GIU_Bool_AIChat_Shitch(ID) == true)
+                    {
+
+                        string result = AI_dialogue_stream(reply_B, @"
 你需要分析发给你的句子，并且根据句子内容返回一个立绘状态方法，第一行必须有一个动作
 如果有多行需要有每行都要有个动作或表情变化，记得要正确换行，严格区分大小写！
 如果立绘模板选择F1__f1必须区分大小写写全F1__f1
@@ -3076,9 +3342,14 @@ alice in cradle的女主角，家中第四子。
 {脸部动作}:当{立绘模板}=F1__f1是可填写 m1__b1__u0(默认) m1__b1__u1(张嘴) m1__b1__u3(微笑) m1__b1__uo(张嘴微小) m1__b2__u0(向下看默认) m1__b2__u1(向下看张嘴) m1__b2__u3(向下看微笑) m1__b2__uo(向下看张嘴微小) m1__b1__u0(闭眼默认) m1__b1__u1(闭眼张嘴) m1__b1__u3(闭眼微笑) m1__b1__uo(闭眼张嘴微小) m3__b1_u0(翻白眼) m3__b1_ua(翻白眼张嘴) m4__b1_u0(眼角上杨) m4__b1_ua(眼角上杨张嘴) m5__b1_u0(出汗张嘴) m5__b1_u1(出汗微笑) m5__b1_u2(出汗闭嘴) m7__b0_u1(流泪脸红)
 	当{立绘模板}=F2__f2是可填写
 	当{立绘模板}=F1__F3是可填写
-", url[2], apiKey[2], model[2]);
-                    XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("生成立绘代码 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + 2);
-                    return result;
+", url[ID], apiKey[ID], model[ID]);
+                        XiaoMiaoICaMod.Instance.Set_GUI_Text_AIChat_Tip("生成立绘代码 - API网络请求:空闲 执行完成", "#87CEEB", result, 2 + ID);
+                        return result;
+                    }else
+                    {
+                        return "null";
+                    }
+                    return null;
                 });
                 //Console.WriteLine("所有同步方法已在后台线程启动...");
 
@@ -3361,8 +3632,6 @@ MGM_4ASCEND PLAY";
         }
     }
 
-
-
     public class M_EF    //Extended functionality
     {
         #region DLL
@@ -3473,6 +3742,119 @@ MGM_4ASCEND PLAY";
             }
         }
 
+    }
+
+    public class Git
+    {
+        private static (string owner, string repo) ParseRepoUrl(string url)
+        {
+            // 移除末尾可能的 ".git"
+            if (url.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            {
+                url = url.Substring(0, url.Length - 4);
+            }
+
+            var uri = new Uri(url);
+            var segments = uri.Segments;
+
+            // Segments 的最后两段通常是 owner 和 repo
+            string owner = segments[segments.Length - 2].TrimEnd('/');
+            string repo = segments[segments.Length - 1].TrimEnd('/');
+
+            return (owner, repo);
+        }
+
+        /// <summary>
+        /// 获取当前最新发行版的版本号 (TagName)
+        /// </summary>
+        public static async Task<string> GetLatestVersionAsync(string repoUrl)
+        {
+            var (owner, repo) = ParseRepoUrl(repoUrl);
+
+            // 必须提供一个 User-Agent (ProductHeaderValue) 才能访问 GitHub API
+            var client = new GitHubClient(new ProductHeaderValue("MyGitHubDownloader"));
+
+            try
+            {
+                var release = await client.Repository.Release.GetLatest(owner, repo);
+                return release.TagName; // 通常版本号存放在 TagName，例如 "v1.0.1"
+            }
+            catch (NotFoundException)
+            {
+                return "未找到任何发行版 (No releases found)";
+            }
+        }
+
+        /// <summary>
+        /// 从 Github 下载最新发行版文件
+        /// </summary>
+        /// <param name="repoUrl">Git仓库链接</param>
+        /// <param name="savePath">保存路径（可以是具体文件路径，也可以是文件夹路径）</param>
+        /// <returns>下载成功后的文件完整本地路径</returns>
+        public static async Task<string> DownloadLatestReleaseAsync(string repoUrl, string savePath)
+        {
+            var (owner, repo) = ParseRepoUrl(repoUrl);
+            var client = new GitHubClient(new ProductHeaderValue("MyGitHubDownloader"));
+
+            var release = await client.Repository.Release.GetLatest(owner, repo);
+
+            string downloadUrl = string.Empty;
+            string fileName = string.Empty;
+
+            // 1. 优先尝试下载 Release 附带的第一个编译产物 (Asset)
+            if (release.Assets != null && release.Assets.Count > 0)
+            {
+                var asset = release.Assets[0];
+                downloadUrl = asset.BrowserDownloadUrl;
+                fileName = asset.Name;
+            }
+            else
+            {
+                // 2. 如果没有任何编译产物，则默认下载 Release 的源码压缩包 (Zip)
+                downloadUrl = release.ZipballUrl;
+                fileName = $"{repo}-{release.TagName}.zip";
+            }
+
+            // 3. 处理本地保存路径
+            string fullPath = savePath;
+            // 如果传入的是一个文件夹路径，则自动拼接文件名
+            if (Directory.Exists(savePath) || savePath.EndsWith("\\") || savePath.EndsWith("/"))
+            {
+                if (!Directory.Exists(savePath))
+                {
+                    Directory.CreateDirectory(savePath);
+                }
+                fullPath = Path.Combine(savePath, fileName);
+            }
+            else
+            {
+                // 确保传入的具体文件路径的父文件夹存在
+                var parentDir = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+            }
+
+            // 4. 使用 HttpClient 进行文件下载
+            using (var httpClient = new HttpClient())
+            {
+                // GitHub 下载地址可能发生重定向，也可能需要 User-Agent 标头
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "MyGitHubDownloader");
+
+                using (var response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+                    
+                    using (var fs = new FileStream(fullPath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await response.Content.CopyToAsync(fs);
+                    }
+                }
+            }
+
+            return fullPath; // 返回最终保存的完整路径
+        }
     }
 }
 
