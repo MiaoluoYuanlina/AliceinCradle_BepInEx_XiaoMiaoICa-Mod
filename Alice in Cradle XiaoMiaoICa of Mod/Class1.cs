@@ -8,7 +8,8 @@ using HarmonyLib;
 using m2d;
 using Microsoft.Extensions.Logging;
 using nel; //Assembly-CSharp.dll
-using XX;
+using Newtonsoft.Json;
+using Octokit;
 //
 using System;
 using System.ClientModel;
@@ -20,6 +21,7 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.Pipes;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Reflection;
@@ -35,26 +37,30 @@ using System.Xml.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI; 
-using Newtonsoft.Json;
-using Octokit;
+using XX;
 //
 using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.AI_Chat;
 using static AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6.EventEditor;
+using static evt.EV;
 using static evt.EvDrawerContainer;
 using static nel.MatoateReader;
 using static nel.NelChipPuzzleBox;
 using static nel.UiHkdsChat;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Net.WebRequestMethods;
+using static UnityEngine.GraphicsBuffer;
 
 namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 {
 
 
-    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "2.2.1")]
+    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "3.0.3")]
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
         #region 变量
+        //Mod
+        string Mod_ver = "3.0.3";
+        string Mod_BepInEx_ver = typeof(BaseUnityPlugin).Assembly.GetName().Version.ToString();
 
         //定义为 Instance
         public static XiaoMiaoICaMod Instance;
@@ -65,6 +71,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         //game
         string Game_directory = null;
         int Game_PID = 0;
+
 
         //用户协议
         private bool utilization_agreement = false; // 用户协议是否同意
@@ -89,6 +96,9 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
 
         private static bool GUI_Bool_AliceTranslation = false; // 开关_矮人语翻译
+        private static string GUI_string_AliceTranslation_text = null; // 开关_矮人语翻译
+        private static string[] GUI_Text_AliceTranslation_Tip = { "", ""};
+        private static bool GUI_Bool_AliceTranslation_Original_show = false; // 开关_矮人语翻译_显示原文
 
         private static bool GUI_Bool_NOApplyDamage = false; // 开关_免疫伤害
         private static bool GUI_Bool_NOApplyDamage2 = false; // 开关_不受伤害
@@ -148,7 +158,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
         void Start()//启动
         {
-
+            
             UnityEngine.Debug.Log("Test1");// Unity输出 灰色
             Logger.LogError("Test2");// 错误 
             Logger.LogFatal("Test3");//致命 淡红色
@@ -575,23 +585,162 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
             GUILayout.BeginVertical();//竖排
             GUI_Bool_AliceTranslation = GUILayout.Toggle(GUI_Bool_AliceTranslation, "翻译矮人语");
-            GUILayout.Label("翻译矮人语"); // 文字
-            if (GUILayout.Button("Git")) // 按钮
+            GUI_Bool_AliceTranslation_Original_show = GUILayout.Toggle(GUI_Bool_AliceTranslation_Original_show, "显示原文");
+            if (GUI_Bool_AliceTranslation == true)
             {
-                string url = "https://github.com/Muki0607/DwarfInCradleTranslation.git";
-                string saveLocation = @"D:\DwarfInCradleTranslation_Latest.zip";
-
-                try
+                if (GUI_string_AliceTranslation_text == null)
                 {
-                    string version = Git.GetLatestVersionAsync(url).GetAwaiter().GetResult();
-
-                    Console.WriteLine($"test: {version}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"更新失败: {ex.Message}");
+                    string targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn"); // 你的目标目录
+                    GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
+                    //Console.WriteLine(GUI_string_AliceTranslation_text);
+                    // 输出100字
+                    //Console.WriteLine(GUI_string_AliceTranslation_text.Length > 100 ? GUI_string_AliceTranslation_text.Substring(0, 100) : GUI_string_AliceTranslation_text);
                 }
             }
+            GUILayout.Label("必须同步一次仓库后才能正常使用！此过程可能想要科学上网环境！"); // 文字
+            if (GUILayout.Button("从github仓库同步代码")) // 按钮
+            {
+                string url = "https://github.com/Muki0607/DwarfInCradleTranslation/archive/refs/heads/main.zip";
+                string saveLocation = @"D:\DwarfInCradleTranslation_Latest.zip";
+                Task.Run(() => DownloadAndExtractAsync(url, Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation")));
+            }
+
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            {
+                GUIStyle myTextAreaStyle = new GUIStyle(GUI.skin.textArea);
+                myTextAreaStyle.wordWrap = true;  // 开启自动换行
+                myTextAreaStyle.padding = new RectOffset(5, 5, 5, 5); // 内边距
+
+                GUILayout.Label("上一次文字处理"); // 文字
+                GUILayout.Label("原文:"); // 文字
+                GUI_Text_AliceTranslation_Tip[0] = GUILayout.TextArea(
+                    GUI_Text_AliceTranslation_Tip[0],
+                    myTextAreaStyle,
+                    GUILayout.MinHeight(50) // 最小高度
+                );
+                GUILayout.Label("翻译:"); // 文字
+                GUI_Text_AliceTranslation_Tip[1] = GUILayout.TextArea(
+                    GUI_Text_AliceTranslation_Tip[1],
+                    myTextAreaStyle,
+                    GUILayout.MinHeight(50) // 最小高度
+                );
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            GUILayout.Label("为翻译工作做出贡献的全部创厨圣！"); // 文字
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("苍木羽Muki", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/332720975") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/Muki0607") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("DreamRuthenium", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/13347218") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/DreamRuthenium") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("普莉姆拉老师", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/399329257") { UseShellExecute = true });
+            }
+            if (GUILayout.Button("GitHub")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn") { UseShellExecute = true });
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("煤球_Officia", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/3461563767851138") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("泡花茶的一只猹", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/699059614") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("我是绵羊Yang_g", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/43881503") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("凌空の猫", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/448512891") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("星文_whrite", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/1818237152") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();//横排
+            GUILayout.Label("左旋苏打", GUILayout.Width(250)); // 文字
+            if (GUILayout.Button("bilibili")) // 按钮
+            {
+                Process.Start(new ProcessStartInfo("https://space.bilibili.com/3337754") { UseShellExecute = true });
+            }
+            //if (GUILayout.Button("GitHub")) // 按钮
+            //{
+            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+            //}
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndHorizontal();
+
             GUILayout.EndHorizontal();
             GUILayout.EndHorizontal();
             #endregion
@@ -1576,6 +1725,94 @@ EOF;
             }
         }
 
+        public static string ReadAllTxtFiles(string rootPath)//读取指定目录及其子目录下的所有txt文件内容并返回一个字符串
+        {
+            if (!Directory.Exists(rootPath))
+            {
+                return "目录不存在";
+            }
+
+            // 1. 获取所有 .txt 文件路径（包含子目录）
+            // SearchOption.AllDirectories 是递归查找的关键
+            string[] filePaths = Directory.GetFiles(rootPath, "*.txt", SearchOption.AllDirectories);
+
+            // 2. 使用 StringBuilder 高效拼接大量字符串
+            StringBuilder sb = new StringBuilder();
+
+            foreach (string filePath in filePaths)
+            {
+                try
+                {
+                    // 读取文件内容并追加到 StringBuilder
+                    string content = System.IO.File.ReadAllText(filePath, Encoding.UTF8);
+                    sb.AppendLine($"--- 文件来源: {filePath} ---");
+                    sb.AppendLine(content);
+                    sb.AppendLine(); // 换行符隔离
+                }
+                catch (Exception ex)
+                {
+                    // 预防由于权限或文件占用导致的错误
+                    //Console.WriteLine($"读取失败 {filePath}: {ex.Message}");
+                }
+            }
+
+            return sb.ToString();
+        }
+        static async Task DownloadAndExtractAsync(string url, string destinationDirectory)//从网络下载zip并解压到指定目录
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                // GitHub 必须设置 User-Agent
+                client.DefaultRequestHeaders.Add("User-Agent", "CSharp-Memory-Extractor");
+
+                Console.WriteLine("正在从网络读取数据流...");
+
+                // 1. 发起请求并获取响应流
+                using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+
+                    // 2. 将网络流读入内存流 (MemoryStream)
+                    // 注意：ZipArchive 需要流支持 Seek（随机访问），而网络流通常不支持，
+                    // 所以必须先缓存到内存中。
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await response.Content.CopyToAsync(memoryStream);
+                        memoryStream.Position = 0; // 重置指针到起始位置
+
+                        // 3. 直接从内存流创建 ZipArchive
+                        using (ZipArchive archive = new ZipArchive(memoryStream))
+                        {
+                            Console.WriteLine($"开始解压 {archive.Entries.Count} 个条目...");
+
+                            foreach (ZipArchiveEntry entry in archive.Entries)
+                            {
+                                // 技巧：跳过 GitHub 自动生成的顶层文件夹 (DwarfInCradleTranslation-main/)
+                                string relativePath = entry.FullName.Substring(entry.FullName.IndexOf('/') + 1);
+                                if (string.IsNullOrEmpty(relativePath)) continue;
+
+                                string fullPath = Path.Combine(destinationDirectory, relativePath);
+
+                                // 如果是文件夹条目
+                                if (entry.FullName.EndsWith("/"))
+                                {
+                                    Directory.CreateDirectory(fullPath);
+                                }
+                                else
+                                {
+                                    // 确保父目录存在
+                                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                                    // 解压文件
+                                    entry.ExtractToFile(fullPath, overwrite: true);
+                                    Console.WriteLine($"已解压: {relativePath}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         [HarmonyPatch] // 监听游戏nel.MosaicShower.FnDrawMosaic方法 用于清除马赛克
         public static class nel_MosaicShower_FnDrawMosaic_Patch
         {
@@ -1965,9 +2202,11 @@ EOF;
             public static bool Prefix(ref string LT, TX.TXFamily Fam)
             {
                 //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] LT=" + LT);
-                LT = LT.Replace("找到你了", "MOD注入测试");
-                LT = LT.Replace("开始游戏", "MOD注入测试");
+                //LT = LT.Replace("找到你了", "MOD注入测试");
+                //LT = LT.Replace("开始游戏", "MOD注入测试");
+                //LT = "";
                 return true;
+                
             }
             [HarmonyPostfix]// 后置
             public static void Postfix(MosaicShower __instance)
@@ -2232,7 +2471,241 @@ EOF;
             }
         }
 
-        
+
+        //[HarmonyPatch] // 主页面面标题界面文本处理
+        public static class nel_title_SceneTitleTemp_fineTexts_Patch
+        {
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(nel.title.SceneTitleTemp), "fineTexts");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] nel.title.SceneTitleTemp.fineTexts 后置成功命中");
+
+            }
+        }
+
+
+        //[HarmonyPatch] // 主页面面标题界面文本处理
+        public static class XX_TextRenderer_TextRenderer_Patch
+        {
+
+            
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(XX.TextRenderer), "Txt", new Type[] {
+                typeof(STB)
+                });
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix(ref STB Stb)
+            {
+                //Stb = new STB("BepInEx Ver:" + new XiaoMiaoICaMod().Mod_BepInEx_ver + "\nMiao Mod Ver:" + new XiaoMiaoICaMod().Mod_ver +"\rCopyright (c) 2020- NanameHacha\r@hinayua_r18 & @HashinoMizuha");
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.TextRenderer.Txt 后置成功命中");
+
+            }
+        }
+
+
+        //[HarmonyPatch] // 主页面面标题界面文本处理
+        public static class XX_TextRenderer_setText_Patch
+        {
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(XX.TextRenderer), "setText");
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            public static bool Prefix(ref STB _Stb)
+            {
+                //_Stb = new STB("Miao Mod Ver:null \nbepinex Ver:null \b"+ _Stb); ;
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.TextRenderer.setText 后置成功命中");
+
+            }
+        }
+
+
+        [HarmonyPatch] // 对话文本处理
+        public static class nel_NelEvTextRenderer_forceProgressNextStack_Patch
+        {
+            [HarmonyTargetMethod]
+            static MethodBase TargetMethod()
+            {
+                var method = AccessTools.Method(typeof(nel.NelEvTextRenderer), "forceProgressNextStack", new Type[] {
+                typeof(string)
+                });
+
+                if (method == null)
+                {
+                    XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] 找不到方法。");
+                }
+                return method;
+            }
+
+            // 前置
+            [HarmonyPrefix]
+            //public static bool Prefix(ref STB TargetStb)
+            public static bool Prefix(ref string rsv_text)
+            {
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] " + TargetStb);
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] " + rsv_text);
+                if (GUI_Bool_AliceTranslation == true)
+                {
+                    if (GUI_string_AliceTranslation_text == null)
+                    {
+                        return true;
+                    }
+                    XiaoMiaoICaMod.Instance.Logger.LogWarning(">>> [XiaoMiaoMod] C");
+                    //string target = TargetStb.ToString();
+                    string target = rsv_text.ToString();
+                    //if (GUI_string_AliceTranslation_text.Contains(target))
+                    {
+                        XiaoMiaoICaMod.Instance.Logger.LogWarning(">>> [XiaoMiaoMod] D");
+
+                        string text = GetContentWithFilter(GUI_string_AliceTranslation_text, target);
+                        if (text != null)
+                        {
+                            GUI_Text_AliceTranslation_Tip[0] = target;
+                            GUI_Text_AliceTranslation_Tip[1] = text;
+                            if (GUI_Bool_AliceTranslation_Original_show == true)
+                            {
+                                //TargetStb = new STB("<c6>翻:<c7>" + text + "\n<c5>原:<c7>" + target);
+                                rsv_text = "<c6>翻:<c7>" + text + "\n<c5>原:<c7>" + target;
+                            }
+                            else
+                            {
+                                //TargetStb = new STB(text + " ");
+                                rsv_text = text + " ";
+                            }
+                        }
+                    }
+                }
+
+                //rsv_text = " Test";
+                return true;
+            }
+
+            // 后置
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.TextRenderer.setText 后置成功命中");
+
+
+            }
+            public static string GetContentWithFilter(string fullText, string input)
+            {
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译: 查找翻译:" + input);
+                if (string.IsNullOrEmpty(fullText) || string.IsNullOrEmpty(input))
+                {
+
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无内容跳过");
+                    return null;
+                }
+                // 1. 按行拆分
+                string[] lines = fullText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+                // 2. 定位输入内容的起始行索引
+                // 即使 input 有换行，我们也先找到它在全文中第一次出现的行
+                string inputFirstLine = input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+                int targetLineIndex = -1;
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (lines[i].Contains(inputFirstLine))
+                    {
+                        targetLineIndex = i;
+                        break;
+                    }
+                }
+
+                if (targetLineIndex == -1) {
+
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:非矮人语跳过" );
+                    return null;
+                }
+
+                // 3. 向上寻找星号行
+                int starLineIndex = -1;
+                for (int i = targetLineIndex - 1; i >= 0; i--)
+                {
+                    string currentLine = lines[i].Trim();
+
+                    if (currentLine.StartsWith("*"))
+                    {
+                        // --- 新增逻辑：如果星号行包含 n_，直接返回 null ---
+                        if (currentLine.Contains("n_"))
+                        {
+                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:其他角色对话终止 "+ starLineIndex);
+                            return null;
+                        }
+                        starLineIndex = i;
+                        break;
+                    }
+                }
+
+                // 4. 提取中间行（排除星号行和输入行）
+                if (starLineIndex != -1 && targetLineIndex > starLineIndex + 1)
+                {
+                    // 使用 LINQ 提取中间所有行
+                    var resultLines = lines.Skip(starLineIndex + 1).Take(targetLineIndex - (starLineIndex + 1));
+                    return string.Join(Environment.NewLine, resultLines).Trim();
+                }
+
+                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无返回值跳过");
+                return null;
+            }
+        }
+
     }
 
 
