@@ -8,6 +8,7 @@ using HarmonyLib;
 using m2d;
 using Microsoft.Extensions.Logging;
 using nel; //Assembly-CSharp.dll
+using nel.title;
 using Newtonsoft.Json;
 using Octokit;
 //
@@ -34,6 +35,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Reflection; 
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI; 
@@ -57,6 +59,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
     [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "3.0.3")]
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
+        
         #region 变量
         //Mod
         string Mod_ver = "3.0.3";
@@ -71,6 +74,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         //game
         string Game_directory = null;
         int Game_PID = 0;
+        int Game_lua = 0;
 
 
         //用户协议
@@ -143,6 +147,14 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         #endregion
         void Awake()
         {
+            string gamever = Get_Game_Ver();
+            string modgamedllver = "0.29i";
+            if (gamever!= modgamedllver)
+            {
+                Process.Start("powershell.exe", $"-command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('mod与编译时游戏的dll版本不匹配，如果出现报错，安装最新版游戏或者安装mod适配的游戏版本在尝试！\n当前游戏版本:{gamever}\nmod编译时游戏的版本:{modgamedllver}', '欧尼酱~这是兼容性提示~', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)\"");
+            }
+
+
             Instance = this;
             // 自动加载所有带有 [HarmonyPatch] 特性的类
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
@@ -323,55 +335,63 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
             #endregion
             #region 读取配置文件
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic") == "True")
+            string configPath = Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "preferences");
+
+            // 辅助方法：简化布尔值读取
+            bool ReadBool(string key, bool defaultValue)
             {
-                GUI_Bool_BanMosaic = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic2") == "True")
-            {
-                GUI_Bool_BanMosaic2 = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage") == "True")
-            {
-                GUI_Bool_NOApplyDamage = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage2") == "True")
-            {
-                GUI_Bool_NOApplyDamage2 = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug") == "True")
-            {
-                GUI_Bool_ModDebug = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Export_Resources") == "True")
-            {
-                GUI_Bool_ModDebug_Export_Resources = true;
-            }
-            if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            {
-                GUI_Bool_ModDebug_Noel_info = true;
+                string val = M_EF.Config_Read(configPath, key);
+                return string.IsNullOrEmpty(val) ? defaultValue : val == "True";
             }
 
-            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            //{
-            //    GUI_Bool_ModDebug_Noel_info = true;
-            //}
-            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            //{
-            //    GUI_Bool_ModDebug_Noel_info = true;
-            //}
-            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            //{
-            //    GUI_Bool_ModDebug_Noel_info = true;
-            //}
-            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            //{
-            //    GUI_Bool_ModDebug_Noel_info = true;
-            //}
-            //if (M_EF.Config_Read(Game_directory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info") == "True")
-            //{
-            //    GUI_Bool_ModDebug_Noel_info = true;
-            //}
+            // 布尔值读取
+            GUI_Bool_BanMosaic = ReadBool("GUI_Bool_BanMosaic", false);
+            GUI_Bool_BanMosaic2 = ReadBool("GUI_Bool_BanMosaic2", false);
+            GUI_Bool_AliceTranslation = ReadBool("GUI_Bool_AliceTranslation", false);
+            GUI_Bool_AliceTranslation_Original_show = ReadBool("GUI_Bool_AliceTranslation_Original_show", false);
+            GUI_Bool_NOApplyDamage = ReadBool("GUI_Bool_NOApplyDamage", false);
+            GUI_Bool_NOApplyDamage2 = ReadBool("GUI_Bool_NOApplyDamage2", false);
+            GUI_Bool_SetHP = ReadBool("GUI_Bool_SetHP", false);
+            GUI_Bool_SetMP = ReadBool("GUI_Bool_SetMP", false);
+            GUI_Bool_Debug = ReadBool("GUI_Bool_Debug", false);
+            GUI_Bool_ModDebug = ReadBool("GUI_Bool_ModDebug", false);
+            GUI_Bool_ModDebug_Export_Resources = ReadBool("GUI_Bool_ModDebug_Export_Resources", false);
+            GUI_Bool_ModDebug_Noel_info = ReadBool("GUI_Bool_ModDebug_Noel_info", false);
+            GUI_TextField_EventEditor_bool = ReadBool("GUI_TextField_EventEditor_bool", false);
+
+            // 字符串读取
+            string temp;
+            if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_Money"))) GUI_TextField_Money = temp;
+            if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_SetHP"))) GUI_TextField_SetHP = temp;
+            if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_SetMP"))) GUI_TextField_SetMP = temp;
+            if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_Time"))) GUI_TextField_Time = temp;
+            //if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_EventEditor_Objective"))) GUI_TextField_Objective = temp;
+            //if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_EventEditor_WebUiUrl"))) GUI_TextField_WebUiUrl = temp;
+            //if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_EventEditor_RunText"))) GUI_TextField_RunText = temp;
+            //if (!string.IsNullOrEmpty(temp = M_EF.Config_Read(configPath, "GUI_TextField_AIChat_ChatContent"))) GUI_TextField_ChatContent = temp;
+
+            //  AI 聊天配置数组
+            for (int i = 0; i < GUI_TextField_AIChat_API_url.Length; i++)
+            {
+                string url = M_EF.Config_Read(configPath, $"AIChat_URL_{i}");
+                if (!string.IsNullOrEmpty(url)) GUI_TextField_AIChat_API_url[i] = url;
+
+                string key = M_EF.Config_Read(configPath, $"AIChat_Key_{i}");
+                if (!string.IsNullOrEmpty(key)) GUI_TextField_AIChat_API_key[i] = key;
+
+                string model = M_EF.Config_Read(configPath, $"AIChat_Model_{i}");
+                if (!string.IsNullOrEmpty(model)) GUI_TextField_AIChat_API_model[i] = model;
+
+                string sw = M_EF.Config_Read(configPath, $"AIChat_Switch_{i}");
+                if (!string.IsNullOrEmpty(sw)) GUI_Bool_AIChat_API_Switch[i] = (sw == "True");
+            }
+
+            // 矮人语提示数组
+            for (int i = 0; i < GUI_Text_AliceTranslation_Tip.Length; i++)
+            {
+                string tip = M_EF.Config_Read(configPath, $"AliceTip_{i}");
+                if (!string.IsNullOrEmpty(tip)) GUI_Text_AliceTranslation_Tip[i] = tip;
+            }
             #endregion
             #region 用户协议
             string initext = "";
@@ -414,6 +434,8 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             });
 
             #endregion
+
+
         }
 
         void OnGUI()//绘制UI
@@ -590,13 +612,35 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             {
                 if (GUI_string_AliceTranslation_text == null)
                 {
-                    string targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn"); // 你的目标目录
+                    string targetDirectory = "";
+                    if (Get_Game_Lua() == 0)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    }
+                    else if (Get_Game_Lua() == 1)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    }
+                    else if (Get_Game_Lua() == 2)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    }
+                    else if (Get_Game_Lua() == 3)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn");
+                    }
+                    else if (Get_Game_Lua() == 4)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-tc");
+                    }
+                    else if (Get_Game_Lua() == 5)
+                    {
+                        targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "_");
+                    }
                     GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
-                    //Console.WriteLine(GUI_string_AliceTranslation_text);
-                    // 输出100字
-                    //Console.WriteLine(GUI_string_AliceTranslation_text.Length > 100 ? GUI_string_AliceTranslation_text.Substring(0, 100) : GUI_string_AliceTranslation_text);
                 }
             }
+            GUILayout.Label("当前语言ID:"+ Get_Game_Lua()); // 文字
             GUILayout.Label("必须同步一次仓库后才能正常使用！此过程可能想要科学上网环境！"); // 文字
             if (GUILayout.Button("从github仓库同步代码")) // 按钮
             {
@@ -605,6 +649,38 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                 Task.Run(() => DownloadAndExtractAsync(url, Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation")));
             }
 
+
+            GUILayout.Label("如果翻译的语言不是你所用的语言请返回标题点击刷新按钮"); // 文字
+            if (GUILayout.Button("刷新语言文件")) // 按钮
+            {
+
+                string targetDirectory = "";
+                if (Get_Game_Lua() == 0)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                }
+                else if (Get_Game_Lua() == 1)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                }
+                else if (Get_Game_Lua() == 2)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                }
+                else if (Get_Game_Lua() == 3)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn");
+                }
+                else if (Get_Game_Lua() == 4)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-tc");
+                }
+                else if (Get_Game_Lua() == 5)
+                {
+                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "_");
+                }
+                GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
+            }
 
             GUILayout.BeginVertical(GUI.skin.box);//竖排
             {
@@ -1645,16 +1721,135 @@ EOF;
             return Game_PID;
         }
 
+        public string Get_Game_Ver()// 获取游戏版本
+        {
+            return UnityEngine.Application.version;
+        }
+
+        public int Get_Game_Lua()
+        {
+            // 1. 获取当前场景中的 SceneTitleTemp 实例
+            SceneTitleTemp titleScene = GameObject.FindObjectOfType<SceneTitleTemp>();
+            if (titleScene == null)
+            {
+                //UnityEngine.Debug.Log("[XiaoMiaoMod] 未找到 SceneTitleTemp 实例，请确保处于标题界面。");
+                return Game_lua;
+            }
+
+            // 2. 使用反射获取私有字段 ABtLang
+            // BindingFlags 说明：NonPublic (私有), Instance (实例变量), Public (以防万一它是公有的)
+            FieldInfo field = typeof(SceneTitleTemp).GetField("ABtLang", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+
+            if (field == null)
+            {
+                //UnityEngine.Debug.LogError("[XiaoMiaoMod] 无法在 SceneTitleTemp 中找到字段 'ABtLang'，请检查字段名是否正确。");
+                return Game_lua;
+            }
+
+            // 3. 将获取到的值转换为对应的数组类型
+            ButtonSkinRowLangNel[] abtLangArray = field.GetValue(titleScene) as ButtonSkinRowLangNel[];
+
+            if (abtLangArray != null)
+            {
+                int num = abtLangArray.Length;
+                //UnityEngine.Debug.Log(string.Format("[XiaoMiaoMod] 开始分析语言按钮，共找到 {0} 个", num));
+
+                for (int j = 0; j < num; j++)
+                {
+                    // 获取数组中的皮肤对象
+                    ButtonSkinRowLangNel buttonSkinRowLangNel = abtLangArray[j];
+                    if (buttonSkinRowLangNel == null) continue;
+
+                    // 获取内部按钮组件 (aBtn)
+                    var btn = buttonSkinRowLangNel.getBtn();
+                    if (btn == null) continue;
+
+
+                    // 打印按钮信息 (使用 string.Concat 或 string.Format 兼容 C# 7.3)
+                    //UnityEngine.Debug.Log((buttonSkinRowLangNel != null ? buttonSkinRowLangNel.ToString() : "null"));
+
+                    // 判断该按钮代表的语言是否为当前系统语言
+                    bool isChecked = TX.familyIs(btn.title);
+                    //UnityEngine.Debug.Log("状态: " + isChecked.ToString());
+                    // 核心动作：设置按钮的选中状态
+                    // 参数1: 是否选中, 参数2: 是否触发即时反馈动画
+                    btn.SetChecked(isChecked, true);
+                    // --- 你的逻辑结束 ---
+                    if (isChecked)
+                    {
+                        Game_lua = j;
+                        return j;
+                    }
+                }
+            }
+            else
+            {
+                //UnityEngine.Debug.Log("[XiaoMiaoMod] ABtLang 数组为空或转换失败。");
+            }
+            return Game_lua;
+        }
+
+        public void Set_Mod_Lua(int lua)
+        {
+            if (lua != -1)
+            {
+                return;
+            }
+            else
+            {
+                Game_lua = lua;
+                lua_Refresh(Get_Game_Lua());
+            }
+        }
+
+        public void lua_Refresh(int id)
+        {
+
+        }
+
         public static void SavepreferencesConfig()//保存配置
         {
-            string currentDirectory = Directory.GetCurrentDirectory();
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic", GUI_Bool_BanMosaic.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_BanMosaic2", GUI_Bool_BanMosaic2.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage", GUI_Bool_NOApplyDamage.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_NOApplyDamage2", GUI_Bool_NOApplyDamage2.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug", GUI_Bool_ModDebug.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Export_Resources", GUI_Bool_ModDebug_Export_Resources.ToString());
-            M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\preferences", "GUI_Bool_ModDebug_Noel_info", GUI_Bool_ModDebug_Noel_info.ToString());
+            string configPath = Path.Combine(Directory.GetCurrentDirectory(), "XiaoMiaoICa_Mod_Data", "preferences");
+
+            // --- 基础布尔值与字符串 ---
+            M_EF.Config_Write(configPath, "GUI_Bool_BanMosaic", GUI_Bool_BanMosaic.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_BanMosaic2", GUI_Bool_BanMosaic2.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_AliceTranslation", GUI_Bool_AliceTranslation.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_AliceTranslation_Original_show", GUI_Bool_AliceTranslation_Original_show.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_NOApplyDamage", GUI_Bool_NOApplyDamage.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_NOApplyDamage2", GUI_Bool_NOApplyDamage2.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_SetHP", GUI_Bool_SetHP.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_SetMP", GUI_Bool_SetMP.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_Debug", GUI_Bool_Debug.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_ModDebug", GUI_Bool_ModDebug.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_ModDebug_Export_Resources", GUI_Bool_ModDebug_Export_Resources.ToString());
+            M_EF.Config_Write(configPath, "GUI_Bool_ModDebug_Noel_info", GUI_Bool_ModDebug_Noel_info.ToString());
+            M_EF.Config_Write(configPath, "GUI_TextField_EventEditor_bool", GUI_TextField_EventEditor_bool.ToString());
+
+            M_EF.Config_Write(configPath, "GUI_TextField_Money", GUI_TextField_Money);
+            M_EF.Config_Write(configPath, "GUI_TextField_SetHP", GUI_TextField_SetHP);
+            M_EF.Config_Write(configPath, "GUI_TextField_SetMP", GUI_TextField_SetMP);
+            M_EF.Config_Write(configPath, "GUI_TextField_Time", GUI_TextField_Time);
+            M_EF.Config_Write(configPath, "GUI_TextField_EventEditor_Objective", GUI_TextField_EventEditor_Objective);
+            M_EF.Config_Write(configPath, "GUI_TextField_EventEditor_WebUiUrl", GUI_TextField_EventEditor_WebUiUrl);
+            M_EF.Config_Write(configPath, "GUI_TextField_EventEditor_RunText", GUI_TextField_EventEditor_RunText);
+            M_EF.Config_Write(configPath, "GUI_TextField_AIChat_ChatContent", GUI_TextField_AIChat_ChatContent);
+
+            // 数组类型处理 
+            // AI 聊天配置
+            for (int i = 0; i < GUI_TextField_AIChat_API_url.Length; i++)
+            {
+                M_EF.Config_Write(configPath, $"AIChat_URL_{i}", GUI_TextField_AIChat_API_url[i]);
+                M_EF.Config_Write(configPath, $"AIChat_Key_{i}", GUI_TextField_AIChat_API_key[i]);
+                M_EF.Config_Write(configPath, $"AIChat_Model_{i}", GUI_TextField_AIChat_API_model[i]);
+                M_EF.Config_Write(configPath, $"AIChat_Switch_{i}", GUI_Bool_AIChat_API_Switch[i].ToString());
+            }
+
+            // 矮人语翻译提示 (Tip 数组)
+            for (int i = 0; i < GUI_Text_AliceTranslation_Tip.Length; i++)
+            {
+                M_EF.Config_Write(configPath, $"AliceTip_{i}", GUI_Text_AliceTranslation_Tip[i]);
+            }
         }
 
         IEnumerator SetCustomKey() //更改快捷键
@@ -2138,7 +2333,7 @@ EOF;
                         string fullPath = Path.Combine(folderPath, fileName);
 
 
-                        XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] Key=" + key + "    " + fileName);
+                        //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] Key=" + key + "    " + fileName);
                         if (fileName == "ev_mountain.txt")
                         {
                             XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
@@ -2504,8 +2699,8 @@ EOF;
         }
 
 
-        //[HarmonyPatch] // 主页面面标题界面文本处理
-        public static class XX_TextRenderer_TextRenderer_Patch
+        [HarmonyPatch] // 主页面面标题界面文本处理
+        public static class XX_TextRenderer_Txt_Patch
         {
 
             
@@ -2527,7 +2722,19 @@ EOF;
             [HarmonyPrefix]
             public static bool Prefix(ref STB Stb)
             {
-                //Stb = new STB("BepInEx Ver:" + new XiaoMiaoICaMod().Mod_BepInEx_ver + "\nMiao Mod Ver:" + new XiaoMiaoICaMod().Mod_ver +"\rCopyright (c) 2020- NanameHacha\r@hinayua_r18 & @HashinoMizuha");
+                //Stb = new STB("BepInEx Ver:" + new XiaoMiaoICaMod().Mod_BepInEx_ver + "\nMiao Mod Ver:" + new XiaoMiaoICaMod().Mod_ver + "\rCopyright (c) 2020- NanameHacha\r@hinayua_r18 & @HashinoMizuha");
+                //XiaoMiaoICaMod.Instance.Logger.LogError(">>> [XiaoMiaoMod] "+ Stb);
+                if (Stb.ToString().Contains("@hinayua_r18 & @HashinoMizuha")) {
+                    Stb = new STB("BepInEx Ver:" + new XiaoMiaoICaMod().Mod_BepInEx_ver + "\nMiao Mod Ver:" + new XiaoMiaoICaMod().Mod_ver + "\rCopyright (c) 2020- NanameHacha\r@hinayua_r18 & @HashinoMizuha");
+
+                    int luaid = new XiaoMiaoICaMod().Get_Game_Lua();
+                    if (luaid != -1)
+                    {
+                        new XiaoMiaoICaMod().Set_Mod_Lua(luaid);
+                    }
+                    //new XiaoMiaoICaMod().lua_Refresh();
+                }
+                
                 return true;
             }
 
@@ -2604,22 +2811,23 @@ EOF;
                     {
                         return true;
                     }
-                    XiaoMiaoICaMod.Instance.Logger.LogWarning(">>> [XiaoMiaoMod] C");
                     //string target = TargetStb.ToString();
                     string target = rsv_text.ToString();
                     //if (GUI_string_AliceTranslation_text.Contains(target))
                     {
-                        XiaoMiaoICaMod.Instance.Logger.LogWarning(">>> [XiaoMiaoMod] D");
 
                         string text = GetContentWithFilter(GUI_string_AliceTranslation_text, target);
                         if (text != null)
                         {
+
+                            target = target.Replace("\r\n", "\n").Replace("\r", "\n");
+                            text = text.Replace("\r\n", "\n").Replace("\r", "\n");
                             GUI_Text_AliceTranslation_Tip[0] = target;
                             GUI_Text_AliceTranslation_Tip[1] = text;
                             if (GUI_Bool_AliceTranslation_Original_show == true)
                             {
                                 //TargetStb = new STB("<c6>翻:<c7>" + text + "\n<c5>原:<c7>" + target);
-                                rsv_text = "<c6>翻:<c7>" + text + "\n<c5>原:<c7>" + target;
+                                rsv_text = "<c6>翻:<c0>" + text + "\n<c5>原:<c7>" + target;
                             }
                             else
                             {
@@ -2644,11 +2852,15 @@ EOF;
             }
             public static string GetContentWithFilter(string fullText, string input)
             {
-                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译: 查找翻译:" + input);
+
+                fullText = fullText.Replace("\r\n", "\n").Replace("\r", "\n");//格式化字符
+                input = input.Replace("\r\n", "\n").Replace("\r", "\n");
+
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译: 查找翻译:" + input);
                 if (string.IsNullOrEmpty(fullText) || string.IsNullOrEmpty(input))
                 {
 
-                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无内容跳过");
+                    //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无内容跳过");
                     return null;
                 }
                 // 1. 按行拆分
@@ -2670,7 +2882,7 @@ EOF;
 
                 if (targetLineIndex == -1) {
 
-                    XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:非矮人语跳过" );
+                    //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:非矮人语跳过" );
                     return null;
                 }
 
@@ -2685,7 +2897,7 @@ EOF;
                         // --- 新增逻辑：如果星号行包含 n_，直接返回 null ---
                         if (currentLine.Contains("n_"))
                         {
-                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:其他角色对话终止 "+ starLineIndex);
+                            //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:其他角色对话终止 "+ starLineIndex);
                             return null;
                         }
                         starLineIndex = i;
@@ -2701,7 +2913,7 @@ EOF;
                     return string.Join(Environment.NewLine, resultLines).Trim();
                 }
 
-                XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无返回值跳过");
+                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 矮人语翻译:无返回值跳过");
                 return null;
             }
         }
