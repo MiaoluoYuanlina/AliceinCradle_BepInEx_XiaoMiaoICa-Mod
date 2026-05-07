@@ -21,4 +21,4 @@ Mod信息
 https://api.xiaomiaoica.wiki/AIC/log2/log.php
 
 官网
-https://xiaomiao.ica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/
+https://xiaomiao.ica.wiki/archives/alice-in-cradle-bepinex-mod
