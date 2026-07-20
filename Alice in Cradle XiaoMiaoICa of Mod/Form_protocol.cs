@@ -13,6 +13,8 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Runtime.InteropServices;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
+using AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6;
+
 namespace AIC_XiaoMiaoICa_Mod_DLL
 {
     public partial class Form_protocol : Form
@@ -188,7 +190,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL
         private void button1_Click_1(object sender, EventArgs e)
         {
             string currentDirectory = Directory.GetCurrentDirectory();
-
+            
             M_EF.Config_Write(currentDirectory + @"\XiaoMiaoICa_Mod_Data\user_agreement", "user_agreement", "true");
             this.Close();
             

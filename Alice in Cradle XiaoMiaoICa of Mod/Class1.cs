@@ -1,7 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using BepInEx.Unity.Mono;
+//using BepInEx.Unity.Mono;
 //游戏dll引用
 using evt;//unsafeAssem.dll
 using HarmonyLib;
@@ -88,6 +88,9 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         private Rect WindowsRect = new Rect(50, 50, 500, 400); // 主窗口
         private bool showWindow = false; // 控制窗口显示/隐藏的标志
         private KeyCode toggleKey = KeyCode.Tab; // 用户定义的快捷键
+
+
+        private int GUI_int_Page = 0; // 页面
 
         private string GUI_Textstring = ""; // 输入框
         private bool GUI_TextBool = false; // 开关
@@ -294,7 +297,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
                 Directory.CreateDirectory(exportDir);
 
-                resourceFile = "Alice_in_Cradle_XiaoMiaoICa_of_Mod." + resourceFile;
+                resourceFile = "AliceInCradle_Miaoo_Mod_Dll." + resourceFile;
 
                 if (System.IO.File.Exists(targetPath))
                 {
@@ -327,12 +330,21 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
             #endregion
             #region 解压事件管理器
+            //{
+            //    Logger.LogMessage("=== 当前程序集包含以下嵌入资源 ===");
+            //    Assembly assembly = Assembly.GetExecutingAssembly();
+            //    string[] resourceNames = assembly.GetManifestResourceNames();
+            //    foreach (string resourceName in resourceNames)
+            //    {
+            //        Logger.LogMessage(resourceName);
+            //    }
+            //    Logger.LogMessage("==================================");
+            //}
             if (System.IO.File.Exists(Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "EventEditorModMiddleware.exe")) == false)
             {
                 Logger.LogMessage("解压事件管理器");
-                ExtractEmbeddedZip("Alice_in_Cradle_XiaoMiaoICa_of_Mod.Data.EventEditorModMiddleware.zip", Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa"));
+                ExtractEmbeddedZip("AliceInCradle_Miaoo_Mod_Dll.Data.EventEditorModMiddleware.zip", Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa"));
             }
-
             #endregion
             #region 读取配置文件
             string configPath = Path.Combine(Game_directory, "XiaoMiaoICa_Mod_Data", "preferences");
@@ -562,6 +574,41 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         {
             #region 控件
 
+
+            GUILayout.BeginHorizontal(GUI.skin.box);//横排
+
+            if (GUILayout.Button("主页"))
+            {
+                GUI_int_Page = 0;
+            }
+
+            if (GUILayout.Button("反和谐"))
+            {
+                GUI_int_Page = 1;
+            }
+            if (GUILayout.Button("矮人语翻译"))
+            {
+                GUI_int_Page = 2;
+            }
+            if (GUILayout.Button("数值"))
+            {
+                GUI_int_Page = 3;
+            }
+            if (GUILayout.Button("事件管理器"))
+            {
+                GUI_int_Page = 4;
+            }
+            if (GUILayout.Button("ai对话"))
+            {
+                GUI_int_Page = 5;
+            }
+            if (GUILayout.Button("moddebug"))
+            {
+                GUI_int_Page = 6;
+            }
+
+            GUILayout.EndHorizontal();
+
             #region TIP
             GUIStyle style = new GUIStyle(GUI.skin.label);
             Color redColor = new Color32(255, 0, 0, 255);
@@ -571,47 +618,186 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             
             svPos = GUILayout.BeginScrollView(svPos);// 开始滚动视图
 
-            #region 保存配置
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            if (GUILayout.Button("保存配置到配置文件"))
+            if (GUI_int_Page == 0)
             {
-                SavepreferencesConfig();
-            }
-            GUILayout.Label("将当前配置保存，下次启动自动读取。"); // 文字
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region 快捷键
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            if (GUILayout.Button("设置窗口隐藏显示快捷键")) // 按钮
-            {
-                StartCoroutine(SetCustomKey());//调用函数
-            }
-            GUILayout.Label(GUI_string_toggleKey + toggleKey); // 文字
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region 马赛克
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            GUILayout.BeginVertical();//竖排
-            GUI_Bool_BanMosaic = GUILayout.Toggle(GUI_Bool_BanMosaic, "禁止由代码生成的马赛克生成");
-            GUILayout.Label("代码生成的马赛克是动态加载的，如在长椅上0721的时候，生成的马赛克就是动态生成的。"); // 文字
-            GUI_Bool_BanMosaic2 = GUILayout.Toggle(GUI_Bool_BanMosaic2, "替换被马赛克修改过的图片");
-            GUILayout.Label("被马赛克修改过的图片修改的图是指CG。哈酱在把画完的CG放进游戏的时候，马赛克已经被涂在游戏CG上了，所以这是不可逆的。"); // 文字
-            GUILayout.Label("所以本苗只能手绘，或者使用AI，但是我还没弄明白怎么用AI去除涩图上的马赛克。现在看来就只能进行手绘了，我也没什么绘画技术，只能先凑合用吧。目前我只手绘了少量图片馁，并没有覆盖游戏的全部CG，毕竟时间画技有限。"); // 文字
-            GUILayout.EndHorizontal(); 
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region 矮人语翻译
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            GUILayout.BeginVertical();//竖排
-            GUI_Bool_AliceTranslation = GUILayout.Toggle(GUI_Bool_AliceTranslation, "翻译矮人语");
-            GUI_Bool_AliceTranslation_Original_show = GUILayout.Toggle(GUI_Bool_AliceTranslation_Original_show, "显示原文");
-            if (GUI_Bool_AliceTranslation == true)
-            {
-                if (GUI_string_AliceTranslation_text == null)
+                #region 保存配置
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                if (GUILayout.Button("保存配置到配置文件"))
                 {
+                    SavepreferencesConfig();
+                }
+                GUILayout.Label("将当前配置保存，下次启动自动读取。"); // 文字
+                GUILayout.EndHorizontal();
+                #endregion
+
+                #region 快捷键
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                if (GUILayout.Button("设置窗口隐藏显示快捷键")) // 按钮
+                {
+                    StartCoroutine(SetCustomKey());//调用函数
+                }
+                GUILayout.Label(GUI_string_toggleKey + toggleKey); // 文字
+                GUILayout.EndHorizontal();
+                #endregion
+
+                #region debug
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("使用游戏原版调试Debug");
+                if (GUILayout.Button("启用该功能")) // 按钮
+                {
+                    Patch_X_LoadDebug.GameDeBug(true);
+                    new EventEditor().run_HaLua(@"
+TALKER n CCL 
+PIC   n a_1/a00L3R3__F1__f1__m1__b1__u1    
+MSG n_<<<EOF 
+<c6>你需要返回主页重新读档才会生效！
+EOF;
+");
+
+                }
+                if (GUILayout.Button("关闭该功能")) // 按钮
+                {
+                    Patch_X_LoadDebug.GameDeBug(false);
+                    new EventEditor().run_HaLua(@"
+TX_BOARD <<<EOF 
+<c6>你想要返回主页面重新读档才能生效！
+EOF;
+");
+                }
+                //if (GUILayout.Button("打开/关闭 GUI F7")) // 按钮
+                //{
+                //    strikeF7();
+                //}
+                GUILayout.EndHorizontal();
+                //if (GUILayout.Button("Test")) // 按钮
+                //{
+                //    Patch_X_LoadDebug.SetBool("timestamp", true);
+                //    Patch_X_LoadDebug.SetBool("announce", true);
+                //}
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("启用后点击F7开启关闭GUI！");
+                GUILayout.Label(GUI_string_Debug, style);
+                GUILayout.EndHorizontal();
+                //GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
+                //    "\n╔< 汉化栏" +
+                //    "\n╠══╦⇒ ? ↴ " +
+                //    "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
+                //    "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
+                //    "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
+                //    "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
+                //    "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
+                //    "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
+                //    "\n╟    ╚═⇒ seed ⇄ 种子" +
+                //    "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
+                //    "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
+                //    "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
+                //    "\n╟    ╠═⇒ pos ⇄ 坐标" +
+                //    "\n╟    ╚══> 右边的敌队生物翻译一样。" +
+                //    "\n╠══╦⇒ item ⇄ 物品" +
+                //    "\n╟    ╠═⇒ Grade ⇄ 数量" +
+                //    "\n╟    ╠═⇒ Money ⇄ 钱币" +
+                //    "\n╟    ╠═⇒ All ⇄ 全部物品" +
+                //    "\n╟    ╠═⇒ CURE ⇄ 治疗" +
+                //    "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
+                //    "\n╟    ╠═⇒ MTR ⇄ 材料" +
+                //    "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
+                //    "\n╟    ╠═⇒ WATER ⇄ 水" +
+                //    "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
+                //    "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
+                //    "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
+                //    "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
+                //    "\n╟    ╠═⇒ TOOL ⇄ 工具" +
+                //    "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
+                //    "\n╟    ╠═⇒ SKILL ⇄ 技能" +
+                //    "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
+                //    "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
+                //    "\n⇓" +
+                //    "\n待更新");
+                GUILayout.EndHorizontal();
+                #endregion
+
+                #region 变速齿轮
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                if (GUILayout.Button("修改游戏速度")) // 按钮
+                {
+                    int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_Time));
+                    Time.timeScale = textint; // 游戏加速
+                    GUI_TextField_Time = textint.ToString();
+                }
+                GUI_TextField_Time = GUILayout.TextField(GUI_TextField_Time, GUILayout.Width(100));
+                GUILayout.EndHorizontal();
+                #endregion
+            }
+
+            if (GUI_int_Page == 1)
+            {
+                #region 马赛克
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                GUILayout.BeginVertical();//竖排
+                GUI_Bool_BanMosaic = GUILayout.Toggle(GUI_Bool_BanMosaic, "禁止由代码生成的马赛克生成");
+                GUILayout.Label("代码生成的马赛克是动态加载的，如在长椅上0721的时候，生成的马赛克就是动态生成的。"); // 文字
+                GUI_Bool_BanMosaic2 = GUILayout.Toggle(GUI_Bool_BanMosaic2, "替换被马赛克修改过的图片");
+                GUILayout.Label("被马赛克修改过的图片修改的图是指CG。哈酱在把画完的CG放进游戏的时候，马赛克已经被涂在游戏CG上了，所以这是不可逆的。"); // 文字
+                GUILayout.Label("所以本苗只能手绘，或者使用AI，但是我还没弄明白怎么用AI去除涩图上的马赛克。现在看来就只能进行手绘了，我也没什么绘画技术，只能先凑合用吧。目前我只手绘了少量图片馁，并没有覆盖游戏的全部CG，毕竟时间画技有限。"); // 文字
+                GUILayout.EndHorizontal();
+                GUILayout.EndHorizontal();
+                #endregion
+            }
+
+            if (GUI_int_Page == 2)
+            {
+                #region 矮人语翻译
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                GUILayout.BeginVertical();//竖排
+                GUI_Bool_AliceTranslation = GUILayout.Toggle(GUI_Bool_AliceTranslation, "翻译矮人语");
+                GUI_Bool_AliceTranslation_Original_show = GUILayout.Toggle(GUI_Bool_AliceTranslation_Original_show, "显示原文");
+                if (GUI_Bool_AliceTranslation == true)
+                {
+                    if (GUI_string_AliceTranslation_text == null)
+                    {
+                        string targetDirectory = "";
+                        if (Get_Game_Lua() == 0)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                        }
+                        else if (Get_Game_Lua() == 1)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                        }
+                        else if (Get_Game_Lua() == 2)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                        }
+                        else if (Get_Game_Lua() == 3)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn");
+                        }
+                        else if (Get_Game_Lua() == 4)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-tc");
+                        }
+                        else if (Get_Game_Lua() == 5)
+                        {
+                            targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "_");
+                        }
+                        GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
+                    }
+                }
+                GUILayout.Label("当前语言ID:" + Get_Game_Lua()); // 文字
+                GUILayout.Label("必须同步一次仓库后才能正常使用！此过程可能想要科学上网环境！"); // 文字
+                if (GUILayout.Button("从github仓库同步代码")) // 按钮
+                {
+                    string url = "https://github.com/Muki0607/DwarfInCradleTranslation/archive/refs/heads/main.zip";
+                    string saveLocation = @"D:\DwarfInCradleTranslation_Latest.zip";
+                    Task.Run(() => DownloadAndExtractAsync(url, Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation")));
+                }
+
+
+                GUILayout.Label("如果翻译的语言不是你所用的语言请返回标题点击刷新按钮"); // 文字
+                if (GUILayout.Button("刷新语言文件")) // 按钮
+                {
+
                     string targetDirectory = "";
                     if (Get_Game_Lua() == 0)
                     {
@@ -639,189 +825,150 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
                     }
                     GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
                 }
-            }
-            GUILayout.Label("当前语言ID:"+ Get_Game_Lua()); // 文字
-            GUILayout.Label("必须同步一次仓库后才能正常使用！此过程可能想要科学上网环境！"); // 文字
-            if (GUILayout.Button("从github仓库同步代码")) // 按钮
-            {
-                string url = "https://github.com/Muki0607/DwarfInCradleTranslation/archive/refs/heads/main.zip";
-                string saveLocation = @"D:\DwarfInCradleTranslation_Latest.zip";
-                Task.Run(() => DownloadAndExtractAsync(url, Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation")));
-            }
 
-
-            GUILayout.Label("如果翻译的语言不是你所用的语言请返回标题点击刷新按钮"); // 文字
-            if (GUILayout.Button("刷新语言文件")) // 按钮
-            {
-
-                string targetDirectory = "";
-                if (Get_Game_Lua() == 0)
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    GUIStyle myTextAreaStyle = new GUIStyle(GUI.skin.textArea);
+                    myTextAreaStyle.wordWrap = true;  // 开启自动换行
+                    myTextAreaStyle.padding = new RectOffset(5, 5, 5, 5); // 内边距
+
+                    GUILayout.Label("上一次文字处理"); // 文字
+                    GUILayout.Label("原文:"); // 文字
+                    GUI_Text_AliceTranslation_Tip[0] = GUILayout.TextArea(
+                        GUI_Text_AliceTranslation_Tip[0],
+                        myTextAreaStyle,
+                        GUILayout.MinHeight(50) // 最小高度
+                    );
+                    GUILayout.Label("翻译:"); // 文字
+                    GUI_Text_AliceTranslation_Tip[1] = GUILayout.TextArea(
+                        GUI_Text_AliceTranslation_Tip[1],
+                        myTextAreaStyle,
+                        GUILayout.MinHeight(50) // 最小高度
+                    );
                 }
-                else if (Get_Game_Lua() == 1)
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
+                GUILayout.Label("为翻译工作做出贡献的全部创厨圣！"); // 文字
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("苍木羽Muki", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/332720975") { UseShellExecute = true });
                 }
-                else if (Get_Game_Lua() == 2)
+                if (GUILayout.Button("GitHub")) // 按钮
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "en");
+                    Process.Start(new ProcessStartInfo("https://github.com/Muki0607") { UseShellExecute = true });
                 }
-                else if (Get_Game_Lua() == 3)
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("DreamRuthenium", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-cn");
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/13347218") { UseShellExecute = true });
                 }
-                else if (Get_Game_Lua() == 4)
+                if (GUILayout.Button("GitHub")) // 按钮
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "zh-tc");
+                    Process.Start(new ProcessStartInfo("https://github.com/DreamRuthenium") { UseShellExecute = true });
                 }
-                else if (Get_Game_Lua() == 5)
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("普莉姆拉老师", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
                 {
-                    targetDirectory = Path.Combine(Game_directory, "BepInEx", "plugins", "XiaoMiao_ICa", "DwarfInCradleTranslation", "localization", "_");
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/399329257") { UseShellExecute = true });
                 }
-                GUI_string_AliceTranslation_text = ReadAllTxtFiles(targetDirectory);
+                if (GUILayout.Button("GitHub")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn") { UseShellExecute = true });
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("煤球_Officia", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/3461563767851138") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("泡花茶的一只猹", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/699059614") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("我是绵羊Yang_g", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/43881503") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("凌空の猫", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/448512891") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("星文_whrite", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/1818237152") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("左旋苏打", GUILayout.Width(250)); // 文字
+                if (GUILayout.Button("bilibili")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://space.bilibili.com/3337754") { UseShellExecute = true });
+                }
+                //if (GUILayout.Button("GitHub")) // 按钮
+                //{
+                //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
+                //}
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndHorizontal();
+                GUILayout.EndHorizontal();
+                #endregion
             }
 
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
+            if (GUI_int_Page == 3)
             {
-                GUIStyle myTextAreaStyle = new GUIStyle(GUI.skin.textArea);
-                myTextAreaStyle.wordWrap = true;  // 开启自动换行
-                myTextAreaStyle.padding = new RectOffset(5, 5, 5, 5); // 内边距
-
-                GUILayout.Label("上一次文字处理"); // 文字
-                GUILayout.Label("原文:"); // 文字
-                GUI_Text_AliceTranslation_Tip[0] = GUILayout.TextArea(
-                    GUI_Text_AliceTranslation_Tip[0],
-                    myTextAreaStyle,
-                    GUILayout.MinHeight(50) // 最小高度
-                );
-                GUILayout.Label("翻译:"); // 文字
-                GUI_Text_AliceTranslation_Tip[1] = GUILayout.TextArea(
-                    GUI_Text_AliceTranslation_Tip[1],
-                    myTextAreaStyle,
-                    GUILayout.MinHeight(50) // 最小高度
-                );
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.Label("为翻译工作做出贡献的全部创厨圣！"); // 文字
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("苍木羽Muki", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/332720975") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("GitHub")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/Muki0607") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("DreamRuthenium", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/13347218") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("GitHub")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/DreamRuthenium") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("普莉姆拉老师", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/399329257") { UseShellExecute = true });
-            }
-            if (GUILayout.Button("GitHub")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("煤球_Officia", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/3461563767851138") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("泡花茶的一只猹", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/699059614") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("我是绵羊Yang_g", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/43881503") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("凌空の猫", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/448512891") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("星文_whrite", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/1818237152") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("左旋苏打", GUILayout.Width(250)); // 文字
-            if (GUILayout.Button("bilibili")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://space.bilibili.com/3337754") { UseShellExecute = true });
-            }
-            //if (GUILayout.Button("GitHub")) // 按钮
-            //{
-            //    Process.Start(new ProcessStartInfo("") { UseShellExecute = true });
-            //}
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region 免疫伤害
+                #region 免疫伤害
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
             GUILayout.BeginVertical();//竖排
             GUILayout.Label("此选项可能影响的不止玩家操作的角色,如果出现杀不死的魔族请关闭此选项。"); // 文字
@@ -833,7 +980,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             GUILayout.EndHorizontal();
             #endregion
 
-            #region HPMP
+                #region HPMP
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
 
             //GUILayout.Label("text");
@@ -862,7 +1009,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             GUILayout.EndHorizontal();
             #endregion
 
-            #region 金币
+                #region 金币
             GUILayout.BeginHorizontal(GUI.skin.box);//横排
 
             //GUILayout.Label("text");
@@ -876,105 +1023,19 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 
             GUILayout.EndHorizontal();
             #endregion
-
-            #region 变速齿轮
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            if (GUILayout.Button("修改游戏速度")) // 按钮
-            {
-                int textint = Mathf.RoundToInt(int.Parse(GUI_TextField_Time));
-                Time.timeScale = textint; // 游戏加速
-                GUI_TextField_Time = textint.ToString();
             }
-            GUI_TextField_Time = GUILayout.TextField(GUI_TextField_Time, GUILayout.Width(100));
-            GUILayout.EndHorizontal();
-            #endregion
 
-            #region debug
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("使用游戏原版调试Debug");
-            if (GUILayout.Button("启用该功能")) // 按钮
+            if (GUI_int_Page == 4)
             {
-                Patch_X_LoadDebug.GameDeBug (true);
-                new EventEditor().run_HaLua(@"
-TALKER n CCL 
-PIC   n a_1/a00L3R3__F1__f1__m1__b1__u1    
-MSG n_<<<EOF 
-<c6>你需要返回主页重新读档才会生效！
-EOF;
-");
+                #region 事件管理器
 
-            }
-            if (GUILayout.Button("关闭该功能")) // 按钮
-            {
-                Patch_X_LoadDebug.GameDeBug (false);
-                new EventEditor().run_HaLua(@"
-TX_BOARD <<<EOF 
-<c6>你想要返回主页面重新读档才能生效！
-EOF;
-");
-            }
-            //if (GUILayout.Button("打开/关闭 GUI F7")) // 按钮
-            //{
-            //    strikeF7();
-            //}
-            GUILayout.EndHorizontal();
-            //if (GUILayout.Button("Test")) // 按钮
-            //{
-            //    Patch_X_LoadDebug.SetBool("timestamp", true);
-            //    Patch_X_LoadDebug.SetBool("announce", true);
-            //}
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("启用后点击F7开启关闭GUI！");
-            GUILayout.Label(GUI_string_Debug, style);
-            GUILayout.EndHorizontal();
-            //GUILayout.Label("此功能是AliceInCradle开发者留下的调试功能。" +
-            //    "\n╔< 汉化栏" +
-            //    "\n╠══╦⇒ ? ↴ " +
-            //    "\n╟    ╠═⇒ mighty ⇄ 大幅度增加攻击力" +
-            //    "\n╟    ╠═⇒ nodamage ⇄ 不会收到伤害" +
-            //    "\n╟    ╠═⇒ weak ⇄ 受到1下伤害就会倒下" +
-            //    "\n╟    ╠═⇒ IF文で停止 ⇄ 获取全部魔法" +
-            //    "\n╟    ╠═⇒ IF语句停止 ⇄ 停止使用 IF 语句。" +
-            //    "\n╟    ╠═⇒ <BREAK>で停止 ⇄ 停在<BREAK>" +
-            //    "\n╟    ╚═⇒ seed ⇄ 种子" +
-            //    "\n╠══╦⇒ HP/MP ⇄ 生命值/魔力值 ↴" +
-            //    "\n╟    ╠═⇒ Noel ⇄ 诺艾尔    kill ⇄ 杀死(点了你就直接死了)" +
-            //    "\n╟    ╠═⇒ HP ⇄ 生命值    MP ⇄ 魔力值 " +
-            //    "\n╟    ╠═⇒ pos ⇄ 坐标" +
-            //    "\n╟    ╚══> 右边的敌队生物翻译一样。" +
-            //    "\n╠══╦⇒ item ⇄ 物品" +
-            //    "\n╟    ╠═⇒ Grade ⇄ 数量" +
-            //    "\n╟    ╠═⇒ Money ⇄ 钱币" +
-            //    "\n╟    ╠═⇒ All ⇄ 全部物品" +
-            //    "\n╟    ╠═⇒ CURE ⇄ 治疗" +
-            //    "\n╟    ╠═⇒ BOMB ⇄ 炸弹" +
-            //    "\n╟    ╠═⇒ MTR ⇄ 材料" +
-            //    "\n╟    ╠═⇒ INGREDIENT ⇄ 原料" +
-            //    "\n╟    ╠═⇒ WATER ⇄ 水" +
-            //    "\n╟    ╠═⇒ BOTTLE ⇄ 瓶装" +
-            //    "\n╟    ╠═⇒ FRUIT ⇄ 水果" +
-            //    "\n╟    ╠═⇒ DUST ⇄ 腐烂的食物" +
-            //    "\n╟    ╠═⇒ PRECIOUS ⇄ 贵重物品" +
-            //    "\n╟    ╠═⇒ TOOL ⇄ 工具" +
-            //    "\n╟    ╠═⇒ ENHANCER ⇄ 插件" +
-            //    "\n╟    ╠═⇒ SKILL ⇄ 技能" +
-            //    "\n╟    ╠═⇒ RECIPE ⇄ 宝箱" +
-            //    "\n╟    ╚═⇒ SPCONFIG ⇄ 不明" +
-            //    "\n⇓" +
-            //    "\n待更新");
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region 事件管理器
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
 
 
-            GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("启动事件管理器"))
-            {
-                new EventEditor().run_HaLua(@"
+                GUILayout.BeginHorizontal();//横排
+                if (GUILayout.Button("启动事件管理器"))
+                {
+                    new EventEditor().run_HaLua(@"
 TALKER n CCL 
 PIC   n a_1/a00L3R3__F1__f1__m1__b1__u1    
 MSG n_<<<EOF 
@@ -986,26 +1047,49 @@ MSG n_<<<EOF
 <c2>还请谅解~
 EOF;
 ");
-                Task.Run(() =>
-                {
-
-
                     Task.Run(() =>
                     {
-                        ;
-                        string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Game_directory + "\\BepInEx\\plugins\\XiaoMiao_ICa\\EventEditorModMiddleware.exe");
 
-                        if (!System.IO.File.Exists(exePath))
-                            return;
 
-                        Process.Start(new ProcessStartInfo
+                        Task.Run(() =>
                         {
-                            FileName = exePath,
-                            UseShellExecute = true,
-                            WorkingDirectory = Path.GetDirectoryName(exePath)
+                            ;
+                            string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Game_directory + "\\BepInEx\\plugins\\XiaoMiao_ICa\\EventEditorModMiddleware.exe");
+
+                            if (!System.IO.File.Exists(exePath))
+                                return;
+
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = exePath,
+                                UseShellExecute = true,
+                                WorkingDirectory = Path.GetDirectoryName(exePath)
+                            });
                         });
+                        Thread.Sleep(5000); // 卡住当前线程
+                        DataJson json = new DataJson
+                        {
+                            Type = "EventEditor_Start",
+                            Text = "",
+                            Pid = Game_PID,
+                            Objective = GUI_TextField_EventEditor_Objective,
+                            EditorUrl = GUI_TextField_EventEditor_WebUiUrl,
+                            directory = Game_directory,
+                        };
+
+                        string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
+
+                        new EventEditor().Send("MiaoAicMod_EventEditor", payload);
+
+
+
+
                     });
-                    Thread.Sleep(5000); // 卡住当前线程
+                }
+                GUI.enabled = true;
+                if (GUILayout.Button("重新连接事件管理器"))
+                {
+
                     DataJson json = new DataJson
                     {
                         Type = "EventEditor_Start",
@@ -1019,562 +1103,550 @@ EOF;
                     string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
 
                     new EventEditor().Send("MiaoAicMod_EventEditor", payload);
+                }
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
 
 
-
-
-                });
-            }
-            GUI.enabled = true;
-            if (GUILayout.Button("重新连接事件管理器"))
-            {
-
-                DataJson json = new DataJson
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("使用什么浏览器启动");
+                if (GUILayout.Button("Google Chrome"))
                 {
-                    Type = "EventEditor_Start",
-                    Text = "",
-                    Pid = Game_PID,
-                    Objective = GUI_TextField_EventEditor_Objective,
-                    EditorUrl = GUI_TextField_EventEditor_WebUiUrl,
-                    directory = Game_directory,
-                };
-
-                string payload = JsonConvert.SerializeObject(json, Formatting.Indented);
-
-                new EventEditor().Send("MiaoAicMod_EventEditor", payload);
-            }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("使用什么浏览器启动"); 
-            if (GUILayout.Button("Google Chrome"))
-            {
-                GUI_TextField_EventEditor_Objective = "chrome";
-            }
-            if (GUILayout.Button("microsoft Edge"))
-            {
-                GUI_TextField_EventEditor_Objective = "msedge";
-            }
-            GUILayout.EndHorizontal();
-
-
-            GUI_TextField_EventEditor_Objective = GUILayout.TextField(GUI_TextField_EventEditor_Objective);
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("使用那个镜像站"); // 文字
-            if (GUILayout.Button("普莉姆拉主站"))
-            {
-                GUI_TextField_EventEditor_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
-            }
-            if (GUILayout.Button("本苗镜像站"))
-            {
-                GUI_TextField_EventEditor_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
-            }
-            GUILayout.EndHorizontal();
-            GUI_TextField_EventEditor_WebUiUrl = GUILayout.TextField(GUI_TextField_EventEditor_WebUiUrl);
-
-
-            GUILayout.BeginHorizontal();//横排
-            GUILayout.Label("刷新游戏的文本数据");
-            if (GUILayout.Button("刷新数据"))
-            {
-                new EventEditor().ForceReloadText();
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-            var GUI_TextField_EventEditor_RunText_s = GUI.skin.textArea;
-            GUI_TextField_EventEditor_RunText = GUILayout.TextArea(GUI_TextField_EventEditor_RunText, GUILayout.Height(GUI_TextField_EventEditor_RunText_s.CalcHeight(new GUIContent(GUI_TextField_EventEditor_RunText), 300))
-            );
-            GUI_TextField_EventEditor_bool = GUILayout.Toggle(GUI_TextField_EventEditor_bool, "不直接执行传递过来的《哈语言》。");
-            if (GUILayout.Button("执行")) // 按钮
-            {
-                new EventEditor().run_HaLua(GUI_TextField_EventEditor_RunText);
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.Label("\nWenUI部分由 B站@普莉姆拉老师开发", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(0.8f, 0.4f, 1f) } });
-            GUILayout.BeginHorizontal();//横排
-            if (GUILayout.Button("事件编辑器WebUI GitHub项目")) // 按钮
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn/AicEventEditor") { UseShellExecute = true });
-            }
-            GUILayout.EndHorizontal();
-
-            
-
-
-            if (GUI_Bool_ModDebug == true)
-            {
-                if (GUILayout.Button("Test1"))
+                    GUI_TextField_EventEditor_Objective = "chrome";
+                }
+                if (GUILayout.Button("microsoft Edge"))
                 {
-                    try
+                    GUI_TextField_EventEditor_Objective = "msedge";
+                }
+                GUILayout.EndHorizontal();
+
+
+                GUI_TextField_EventEditor_Objective = GUILayout.TextField(GUI_TextField_EventEditor_Objective);
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("使用那个镜像站"); // 文字
+                if (GUILayout.Button("普莉姆拉主站"))
+                {
+                    GUI_TextField_EventEditor_WebUiUrl = "https://aic.imtfe.org/AicEventEditor/";
+                }
+                if (GUILayout.Button("本苗镜像站"))
+                {
+                    GUI_TextField_EventEditor_WebUiUrl = "https://api.ica.wiki/AIC/EventEditor";
+                }
+                GUILayout.EndHorizontal();
+                GUI_TextField_EventEditor_WebUiUrl = GUILayout.TextField(GUI_TextField_EventEditor_WebUiUrl);
+
+
+                GUILayout.BeginHorizontal();//横排
+                GUILayout.Label("刷新游戏的文本数据");
+                if (GUILayout.Button("刷新数据"))
+                {
+                    new EventEditor().ForceReloadText();
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
+                var GUI_TextField_EventEditor_RunText_s = GUI.skin.textArea;
+                GUI_TextField_EventEditor_RunText = GUILayout.TextArea(GUI_TextField_EventEditor_RunText, GUILayout.Height(GUI_TextField_EventEditor_RunText_s.CalcHeight(new GUIContent(GUI_TextField_EventEditor_RunText), 300))
+                );
+                GUI_TextField_EventEditor_bool = GUILayout.Toggle(GUI_TextField_EventEditor_bool, "不直接执行传递过来的《哈语言》。");
+                if (GUILayout.Button("执行")) // 按钮
+                {
+                    new EventEditor().run_HaLua(GUI_TextField_EventEditor_RunText);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.Label("\nWenUI部分由 B站@普莉姆拉老师开发", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(0.8f, 0.4f, 1f) } });
+                GUILayout.BeginHorizontal();//横排
+                if (GUILayout.Button("事件编辑器WebUI GitHub项目")) // 按钮
+                {
+                    Process.Start(new ProcessStartInfo("https://github.com/cocoAutumn/AicEventEditor") { UseShellExecute = true });
+                }
+                GUILayout.EndHorizontal();
+
+
+
+
+                if (GUI_Bool_ModDebug == true)
+                {
+                    if (GUILayout.Button("Test1"))
                     {
-                        // 1. 获取 STB 对象
-                        STB stb = TX.PopBld(null, 0);
+                        try
+                        {
+                            // 1. 获取 STB 对象
+                            STB stb = TX.PopBld(null, 0);
 
-                        // 2. 构造事件脚本
-                        stb.Add(@"
+                            // 2. 构造事件脚本
+                            stb.Add(@"
 MSG n_<<<EOF 
 <c1>红<c2>橙<c3>黄<c4>绿<c5>蓝<c6>粉<c7>灰<c8>白
 EOF;
 ");
 
-                        // 3. 创建 EvReader
-                        EvReader evReader = new EvReader("%BENCH_EVENT", 0, null, null);
+                            // 3. 创建 EvReader
+                            EvReader evReader = new EvReader("%BENCH_EVENT", 0, null, null);
 
-                        // 4. 解析 STB 脚本
-                        evReader.parseText(stb);
+                            // 4. 解析 STB 脚本
+                            evReader.parseText(stb);
 
-                        // 5. 放入事件队列执行
-                        EV.stackReader(evReader, -1);
+                            // 5. 放入事件队列执行
+                            EV.stackReader(evReader, -1);
 
-                        // 6. 释放 STB
-                        TX.ReleaseBld(stb);
+                            // 6. 释放 STB
+                            TX.ReleaseBld(stb);
 
-                        Logger.LogWarning("[STBExecutor] 脚本已执行");
-                    }
-                    catch (System.Exception ex)
-                    {
-
-                        Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
-                    }
-                }
-            }
-
-
-
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region AI Chat
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-
-
-
-
-            // 1. 先绘制滑动条，控制当前处于哪一组
-
-            GUILayout.BeginVertical("box");
-            GUILayout.BeginVertical("box");
-            GUILayout.Label($"当前正在编辑第 {GUI_AIChat_Config_List} 组配置 (滑动切换)");
-
-            // 动态获取数组最大长度，防止越界。记得减 1 因为索引从 0 开始
-            int maxIndex = GUI_TextField_AIChat_API_url.Length -1;
-
-            // 滑动条
-            GUI_AIChat_Config_List = (int)Mathf.Round(GUILayout.HorizontalSlider(GUI_AIChat_Config_List, 0, maxIndex));
-
-            GUILayout.Space(10);
-            GUILayout.EndVertical();
-
-            if (GUI_AIChat_Config_List == 0)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』对话参数配置");
-            }else if (GUI_AIChat_Config_List == 1)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』文字添色配置");
-            }
-            else if (GUI_AIChat_Config_List == 2)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』立绘处理");
-            }
-            else if(GUI_AIChat_Config_List == 3)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』打开界面处理");
-            }
-            else if(GUI_AIChat_Config_List == 4)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』切换法杖处理");
-            }
-            else if(GUI_AIChat_Config_List == 5)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』四字棋处理");
-            }
-            else if (GUI_AIChat_Config_List == 6)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』给予物品处理");
-            }
-            else if (GUI_AIChat_Config_List == 7)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』修改危险度处理");
-            }
-            else if (GUI_AIChat_Config_List == 8)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』给予金币处理");
-            }
-            else if (GUI_AIChat_Config_List == 9)
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』修改音乐处理");
-            }
-            else
-            {
-                GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』未知");
-            }
-            GUILayout.Space(5);
-
-            GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List] = GUILayout.Toggle(GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List], "是否启用");
-
-            GUILayout.Space(5);
-
-            GUILayout.Label("请求的URL:");
-            GUI_TextField_AIChat_API_url[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_url[GUI_AIChat_Config_List]);
-            GUILayout.Space(5);
-
-            GUILayout.Label("API密钥:");
-            GUI_TextField_AIChat_API_key[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_key[GUI_AIChat_Config_List]);
-            GUILayout.Space(5);
-
-            GUILayout.Label("模型名:");
-            GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List]);
-            GUILayout.Space(5);
-            GUILayout.Label("\n请勿滥用公共APIkey！本苗会看情况在有空余财力对公共AIP密钥进行续费。", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(1.0f, 0.2f, 0.0f) } });
-
-            GUILayout.EndVertical();
-
-
-
-
-
-            GUILayout.Space(20);
-
-            GUILayout.Label("对话内容:");
-            GUI_TextField_AIChat_ChatContent = GUILayout.TextField(GUI_TextField_AIChat_ChatContent);
-            GUILayout.Space(5);
-
-            GUILayout.BeginHorizontal();//横排
-            GUI.enabled = !GUI_AIChat_Loading;
-            if (GUILayout.Button("发起对话"))
-            {
-                new AI_Chat().SendChatAsync_Segmentation(GUI_TextField_AIChat_ChatContent, GUI_TextField_AIChat_API_url, GUI_TextField_AIChat_API_key, GUI_TextField_AIChat_API_model);
-            }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-            GUILayout.Space(5);
-
-
-
-            GUILayout.BeginVertical(GUI.skin.box);//竖排
-
-            // 循环绘制 
-            for (int i = 0; i < GUI_Text_AIChat_Tip_State.Length; i++)
-            {
-                GUIStyle myLabelStyle = new GUIStyle(GUI.skin.label);
-
-                GUIStyle myTextAreaStyle = new GUIStyle(GUI.skin.textArea);
-                if (GUI_Bool_ModDebug == true)
-                {
-                    myTextAreaStyle.wordWrap = true;  // 开启自动换行
-                    myTextAreaStyle.padding = new RectOffset(5, 5, 5, 5); // 内边距
-                }
-
-                // 解析十六进制颜色
-                Color myColor;
-                if (!ColorUtility.TryParseHtmlString(GUI_Text_AIChat_Tip_State_Color[i], out myColor))
-                {
-                    myColor = Color.white; // 默认显示白色
-                }
-
-                // 应用颜色到 Label 样式
-                myLabelStyle.normal.textColor = myColor;
-
-                // 绘制标题（Label）
-                GUILayout.Label(GUI_Text_AIChat_Tip_State[i], myLabelStyle);
-
-
-                if (GUI_Bool_ModDebug == true)
-                {
-                    // 绘制自动换行输入框（TextArea）
-                    GUI_Text_AIChat_Tip_Content[i] = GUILayout.TextArea(
-                        GUI_Text_AIChat_Tip_Content[i],
-                        myTextAreaStyle,
-                        GUILayout.MinHeight(50) // 最小高度
-                    );
-                }
-
-                if (GUI_Bool_ModDebug == true)
-                {
-                    // 组与组之间的间距
-                    GUILayout.Space(10);
-                }
-            }
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-            #endregion
-
-            #region ModDebug
-            GUILayout.BeginHorizontal(GUI.skin.box);//横排
-            GUILayout.BeginVertical();//竖排
-            GUI_Bool_ModDebug = GUILayout.Toggle(GUI_Bool_ModDebug, "当前选项全部为Mod调试选项，请勿随意启用。");
-            GUILayout.BeginVertical();//竖排
-            if (GUI_Bool_ModDebug == true)
-            {
-                GUILayout.BeginVertical();//竖排
-                GUI_Bool_ModDebug_Export_Resources = GUILayout.Toggle(GUI_Bool_ModDebug_Export_Resources, "导出正在加载的资源文件");
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginVertical();//竖排
-                GUI_Bool_ModDebug_Noel_info = GUILayout.Toggle(GUI_Bool_ModDebug_Noel_info, "显示Noel数据");
-                if (GUI_Bool_ModDebug == true)
-                {
-                    if (GUI_Bool_ModDebug_Noel_info == true)
-                    {
-                        GameObject player = GameObject.Find("Noel");
-                        if (player == null)
-                        {
-                            GUILayout.Label("未找到 Noel ;"); // 文字
+                            Logger.LogWarning("[STBExecutor] 脚本已执行");
                         }
-                        else
+                        catch (System.Exception ex)
                         {
-                            PRNoel pr = player.GetComponent<PRNoel>();
 
-                            if (pr == null)
-                            {
+                            Logger.LogWarning("[STBExecutor] 执行出错: " + ex);
+                        }
+                    }
+                }
 
-                                GUILayout.Label("未找到 PRNoel 组件 ;"); // 文字
-                            }
-                            else if (pr == null)
+
+
+                GUILayout.EndHorizontal();
+                #endregion
+            }
+
+            if (GUI_int_Page == 5)
+            {
+                #region AI Chat
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
+
+
+
+
+                // 1. 先绘制滑动条，控制当前处于哪一组
+
+                GUILayout.BeginVertical("box");
+                GUILayout.BeginVertical("box");
+                GUILayout.Label($"当前正在编辑第 {GUI_AIChat_Config_List} 组配置 (滑动切换)");
+
+                // 动态获取数组最大长度，防止越界。记得减 1 因为索引从 0 开始
+                int maxIndex = GUI_TextField_AIChat_API_url.Length - 1;
+
+                // 滑动条
+                GUI_AIChat_Config_List = (int)Mathf.Round(GUILayout.HorizontalSlider(GUI_AIChat_Config_List, 0, maxIndex));
+
+                GUILayout.Space(10);
+                GUILayout.EndVertical();
+
+                if (GUI_AIChat_Config_List == 0)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』对话参数配置");
+                }
+                else if (GUI_AIChat_Config_List == 1)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』文字添色配置");
+                }
+                else if (GUI_AIChat_Config_List == 2)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』立绘处理");
+                }
+                else if (GUI_AIChat_Config_List == 3)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』打开界面处理");
+                }
+                else if (GUI_AIChat_Config_List == 4)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』切换法杖处理");
+                }
+                else if (GUI_AIChat_Config_List == 5)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』四字棋处理");
+                }
+                else if (GUI_AIChat_Config_List == 6)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』给予物品处理");
+                }
+                else if (GUI_AIChat_Config_List == 7)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』修改危险度处理");
+                }
+                else if (GUI_AIChat_Config_List == 8)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』给予金币处理");
+                }
+                else if (GUI_AIChat_Config_List == 9)
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』修改音乐处理");
+                }
+                else
+                {
+                    GUILayout.Label($"『{GUI_AIChat_Config_List}:的详细信息』未知");
+                }
+                GUILayout.Space(5);
+
+                GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List] = GUILayout.Toggle(GUI_Bool_AIChat_API_Switch[GUI_AIChat_Config_List], "是否启用");
+
+                GUILayout.Space(5);
+
+                GUILayout.Label("请求的URL:");
+                GUI_TextField_AIChat_API_url[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_url[GUI_AIChat_Config_List]);
+                GUILayout.Space(5);
+
+                GUILayout.Label("API密钥:");
+                GUI_TextField_AIChat_API_key[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_key[GUI_AIChat_Config_List]);
+                GUILayout.Space(5);
+
+                GUILayout.Label("模型名:");
+                GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List] = GUILayout.TextField(GUI_TextField_AIChat_API_model[GUI_AIChat_Config_List]);
+                GUILayout.Space(5);
+                GUILayout.Label("\n请勿滥用公共APIkey！本苗会看情况在有空余财力对公共AIP密钥进行续费。", new GUIStyle(GUI.skin.label) { normal = { textColor = new Color(1.0f, 0.2f, 0.0f) } });
+
+                GUILayout.EndVertical();
+
+
+
+
+
+                GUILayout.Space(20);
+
+                GUILayout.Label("对话内容:");
+                GUI_TextField_AIChat_ChatContent = GUILayout.TextField(GUI_TextField_AIChat_ChatContent);
+                GUILayout.Space(5);
+
+                GUILayout.BeginHorizontal();//横排
+                GUI.enabled = !GUI_AIChat_Loading;
+                if (GUILayout.Button("发起对话"))
+                {
+                    new AI_Chat().SendChatAsync_Segmentation(GUI_TextField_AIChat_ChatContent, GUI_TextField_AIChat_API_url, GUI_TextField_AIChat_API_key, GUI_TextField_AIChat_API_model);
+                }
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+                GUILayout.Space(5);
+
+
+
+                GUILayout.BeginVertical(GUI.skin.box);//竖排
+
+                // 循环绘制 
+                for (int i = 0; i < GUI_Text_AIChat_Tip_State.Length; i++)
+                {
+                    GUIStyle myLabelStyle = new GUIStyle(GUI.skin.label);
+
+                    GUIStyle myTextAreaStyle = new GUIStyle(GUI.skin.textArea);
+                    if (GUI_Bool_ModDebug == true)
+                    {
+                        myTextAreaStyle.wordWrap = true;  // 开启自动换行
+                        myTextAreaStyle.padding = new RectOffset(5, 5, 5, 5); // 内边距
+                    }
+
+                    // 解析十六进制颜色
+                    Color myColor;
+                    if (!ColorUtility.TryParseHtmlString(GUI_Text_AIChat_Tip_State_Color[i], out myColor))
+                    {
+                        myColor = Color.white; // 默认显示白色
+                    }
+
+                    // 应用颜色到 Label 样式
+                    myLabelStyle.normal.textColor = myColor;
+
+                    // 绘制标题（Label）
+                    GUILayout.Label(GUI_Text_AIChat_Tip_State[i], myLabelStyle);
+
+
+                    if (GUI_Bool_ModDebug == true)
+                    {
+                        // 绘制自动换行输入框（TextArea）
+                        GUI_Text_AIChat_Tip_Content[i] = GUILayout.TextArea(
+                            GUI_Text_AIChat_Tip_Content[i],
+                            myTextAreaStyle,
+                            GUILayout.MinHeight(50) // 最小高度
+                        );
+                    }
+
+                    if (GUI_Bool_ModDebug == true)
+                    {
+                        // 组与组之间的间距
+                        GUILayout.Space(10);
+                    }
+                }
+
+                GUILayout.EndHorizontal();
+                GUILayout.EndHorizontal();
+                #endregion
+            }
+
+            if (GUI_int_Page == 6)
+            {
+                #region ModDebug
+                GUILayout.BeginHorizontal(GUI.skin.box);//横排
+                GUILayout.BeginVertical();//竖排
+                GUI_Bool_ModDebug = GUILayout.Toggle(GUI_Bool_ModDebug, "当前选项全部为Mod调试选项，请勿随意启用。");
+                GUILayout.BeginVertical();//竖排
+                if (GUI_Bool_ModDebug == true)
+                {
+                    GUILayout.BeginVertical();//竖排
+                    GUI_Bool_ModDebug_Export_Resources = GUILayout.Toggle(GUI_Bool_ModDebug_Export_Resources, "导出正在加载的资源文件");
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginVertical();//竖排
+                    GUI_Bool_ModDebug_Noel_info = GUILayout.Toggle(GUI_Bool_ModDebug_Noel_info, "显示Noel数据");
+                    if (GUI_Bool_ModDebug == true)
+                    {
+                        if (GUI_Bool_ModDebug_Noel_info == true)
+                        {
+                            GameObject player = GameObject.Find("Noel");
+                            if (player == null)
                             {
-                                GUILayout.Label("未找到 PRNoel 组件 ;" + pr.ToString()); // 文字
+                                GUILayout.Label("未找到 Noel ;"); // 文字
                             }
                             else
                             {
+                                PRNoel pr = player.GetComponent<PRNoel>();
 
-                                int UI_X = 100;
+                                if (pr == null)
+                                {
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_carry_vx 运动速度X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_carry_vx().ToString());
+                                    GUILayout.Label("未找到 PRNoel 组件 ;"); // 文字
                                 }
-                                catch
+                                else if (pr == null)
                                 {
-                                    GUILayout.Label("获取出错");
+                                    GUILayout.Label("未找到 PRNoel 组件 ;" + pr.ToString()); // 文字
                                 }
-                                GUILayout.EndHorizontal();
+                                else
+                                {
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_carry_vy 运动速度Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_carry_vy().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    int UI_X = 100;
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_walk_xspeed 水平移动速度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_walk_xspeed().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_carry_vx 运动速度X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_carry_vx().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_hp 生命值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_hp().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_carry_vy 运动速度Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_carry_vy().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_maxhp 最大生命:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_maxhp().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_walk_xspeed 水平移动速度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_walk_xspeed().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_maxmp 最大魔力:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_maxmp().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_hp 生命值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_hp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_mp 魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_mp().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_maxhp 最大生命:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_maxhp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_current_state 当前状态:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_current_state().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_maxmp 最大魔力:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_maxmp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_state_time 状态持续时间:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_state_time().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_mp 魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_mp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_ep 兴奋度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_ep().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_current_state 当前状态:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_current_state().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_FootBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_FootBCC().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_state_time 状态持续时间:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_state_time().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_knockback_time:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_knockback_time().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_ep 兴奋度:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_ep().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_LastBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_LastBCC().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_FootBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_FootBCC().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_sizex 碰撞箱尺寸X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_sizex().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_knockback_time:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_knockback_time().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_sizey 碰撞箱尺寸Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_sizey().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_LastBCC 碰撞相关:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_LastBCC().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_temp_puzzle_max_mp 临时/谜题用魔力值上限:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_temp_puzzle_max_mp().ToString());
-                                }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_sizex 碰撞箱尺寸X:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_sizex().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
 
-                                GUILayout.BeginHorizontal(GUI.skin.box);
-                                GUILayout.Label("get_temp_puzzle_mp 临时/谜题用魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
-                                try
-                                {
-                                    GUILayout.Label(pr.get_temp_puzzle_mp().ToString());
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_sizey 碰撞箱尺寸Y:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_sizey().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
+
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_temp_puzzle_max_mp 临时/谜题用魔力值上限:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_temp_puzzle_max_mp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
+
+                                    GUILayout.BeginHorizontal(GUI.skin.box);
+                                    GUILayout.Label("get_temp_puzzle_mp 临时/谜题用魔力值:", GUILayout.Width(UI_X), GUILayout.ExpandWidth(true));
+                                    try
+                                    {
+                                        GUILayout.Label(pr.get_temp_puzzle_mp().ToString());
+                                    }
+                                    catch
+                                    {
+                                        GUILayout.Label("获取出错");
+                                    }
+                                    GUILayout.EndHorizontal();
                                 }
-                                catch
-                                {
-                                    GUILayout.Label("获取出错");
-                                }
-                                GUILayout.EndHorizontal();
+
+
                             }
 
-
                         }
+                    }
 
+                    GUILayout.EndHorizontal();
+
+
+                    if (GUILayout.Button("测试 TX.changeFamily(\"zh-cn\")"))
+                    {
+                        TX.changeFamily("zh-cn");//切换语言
+                    }
+                    if (GUILayout.Button("测试 TX.changeFamily(\"jp\")"))
+                    {
+                        TX.changeFamily("jp");//切换语言
                     }
                 }
-
                 GUILayout.EndHorizontal();
 
 
-                if (GUILayout.Button("测试 TX.changeFamily(\"zh-cn\")"))
-                {
-                    TX.changeFamily("zh-cn");//切换语言
-                }
-                if (GUILayout.Button("测试 TX.changeFamily(\"jp\")"))
-                {
-                    TX.changeFamily("jp");//切换语言
-                }
+
+                GUILayout.EndHorizontal();
+                GUILayout.EndHorizontal();
+                #endregion
             }
-            GUILayout.EndHorizontal();
 
-            
 
-            GUILayout.EndHorizontal();
-            GUILayout.EndHorizontal();
-            #endregion
+
 
             #region 控件_MID信息
             // 在顶部插空白空间
@@ -2564,66 +2636,574 @@ EOF;
             [HarmonyPostfix]
             public static void PostfixSync(string name, Type type, ref UnityEngine.Object __result)
             {
-                
+
                 if (XiaoMiaoICaMod.GUI_Bool_BanMosaic2)
                 {
                     TryReplace(name, type, ref __result);
                 }
                 if (GUI_Bool_ModDebug_Export_Resources)
                 {
-                    UnityEngine.Debug.Log("加载加载资源: " + name);
-                    // 1. 基础校验：结果不能为空，且必须是贴图类型
-                    if (__result == null || !(__result is Texture2D tex)) return;
+                    if (__result == null)
+                    {
+                        UnityEngine.Debug.LogWarning($">>> [AssetDump] 资源加载失败 (null): {name}");
+                        return;
+                    }
+                    UnityEngine.Debug.Log($">>> [AssetDump] 加载资源: {name} 类型: {__result.GetType().Name}");
 
                     try
                     {
-                        // 2. 确保导出目录存在
+                        // 确保导出根目录存在
                         if (!Directory.Exists(ExportPath)) Directory.CreateDirectory(ExportPath);
 
-                        // 3. 处理文件名（防止路径字符冲突）
-                        // 有些资源名带路径，如 assets/ui/logo.png，需要把斜杠替换掉
-                        string safeName = name.Replace("/", "_").Replace("\\", "_");
-                        if (string.IsNullOrEmpty(safeName)) safeName = tex.name;
+                        // 处理文件名
+                        string safeName = name.Replace("/", "_").Replace("\\", "_").Replace(":", "_").Replace("*", "_").Replace("?", "_").Replace("\"", "_").Replace("<", "_").Replace(">", "_").Replace("|", "_");
+                        if (string.IsNullOrEmpty(safeName)) safeName = __result.name;
 
-                        string saveFileName = Path.Combine(ExportPath, safeName + ".png");
-
-                        // 4. 如果文件已经导出过，就跳过（避免重复读写卡顿）
-                        if (System.IO.File.Exists(saveFileName)) return;
-
-                        // 5. 将贴图转为可读状态并导出
-                        // 注意：有些贴图在内存中是不可读的（Read/Write Disabled），直接 Encode 会报错
-                        // 我们需要创建一个临时的可读副本
-                        RenderTexture tmp = RenderTexture.GetTemporary(
-                            tex.width,
-                            tex.height,
-                            0,
-                            RenderTextureFormat.Default,
-                            RenderTextureReadWrite.Linear);
-
-                        Graphics.Blit(tex, tmp);
-                        RenderTexture previous = RenderTexture.active;
-                        RenderTexture.active = tmp;
-
-                        Texture2D readableTex = new Texture2D(tex.width, tex.height);
-                        readableTex.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
-                        readableTex.Apply();
-
-                        RenderTexture.active = previous;
-                        RenderTexture.ReleaseTemporary(tmp);
-
-                        // 6. 写入文件
-                        byte[] bytes = ImageConversion.EncodeToPNG(readableTex);
-                        System.IO.File.WriteAllBytes(saveFileName, bytes);
-
-                        UnityEngine.Object.Destroy(readableTex); // 及时销毁临时对象，防止内存泄漏
-
-                        UnityEngine.Debug.Log($">>> [AssetDump] 成功导出资源: {saveFileName}");
+                        // 根据类型导出到对应子目录
+                        ExportAssetByType(__result, safeName, ExportPath);
                     }
                     catch (Exception ex)
                     {
-                        UnityEngine.Debug.LogError($">>> [AssetDump] 导出 {name} 失败: {ex.Message}");
+                        UnityEngine.Debug.LogError($">>> [AssetDump] 导出 {name} 失败: {ex.Message}\n{ex.StackTrace}");
                     }
                 }
+            }
+
+            /// <summary>
+            /// 根据资源类型导出到对应的子目录和文件格式
+            /// </summary>
+            private static void ExportAssetByType(UnityEngine.Object asset, string safeName, string rootExportPath)
+            {
+                // ==================== 贴图 (Texture2D) ====================
+                if (asset is Texture2D tex)
+                {
+                    string dir = Path.Combine(rootExportPath, "Textures");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".png");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportTexture2D(tex, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出贴图: {savePath}");
+                    return;
+                }
+
+                // ==================== 精灵 (Sprite) ====================
+                if (asset is Sprite sprite)
+                {
+                    string dir = Path.Combine(rootExportPath, "Sprites");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".png");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportSprite(sprite, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出精灵: {savePath}");
+                    return;
+                }
+
+                // ==================== 音频 (AudioClip) ====================
+                if (asset is AudioClip audioClip)
+                {
+                    string dir = Path.Combine(rootExportPath, "Audio");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".wav");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportAudioClip(audioClip, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出音频: {savePath}");
+                    return;
+                }
+
+                // ==================== 模型网格 (Mesh) ====================
+                if (asset is Mesh mesh)
+                {
+                    string dir = Path.Combine(rootExportPath, "Meshes");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".obj");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportMeshToObj(mesh, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出模型: {savePath}");
+                    return;
+                }
+
+                // ==================== 文本资源 (TextAsset) ====================
+                if (asset is TextAsset textAsset)
+                {
+                    string dir = Path.Combine(rootExportPath, "TextAssets");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                    // 尝试检测是否为文本内容
+                    if (IsTextContent(textAsset.bytes))
+                    {
+                        string savePath = Path.Combine(dir, safeName + ".txt");
+                        if (!System.IO.File.Exists(savePath))
+                        {
+                            System.IO.File.WriteAllText(savePath, textAsset.text, Encoding.UTF8);
+                            UnityEngine.Debug.Log($">>> [AssetDump] 导出文本资源: {savePath}");
+                        }
+                    }
+                    else
+                    {
+                        string savePath = Path.Combine(dir, safeName + ".bytes");
+                        if (!System.IO.File.Exists(savePath))
+                        {
+                            System.IO.File.WriteAllBytes(savePath, textAsset.bytes);
+                            UnityEngine.Debug.Log($">>> [AssetDump] 导出二进制资源: {savePath}");
+                        }
+                    }
+                    return;
+                }
+
+                // ==================== 材质 (Material) ====================
+                if (asset is Material material)
+                {
+                    string dir = Path.Combine(rootExportPath, "Materials");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".json");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportMaterial(material, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出材质: {savePath}");
+                    return;
+                }
+
+                // ==================== Shader ====================
+                if (asset is Shader shader)
+                {
+                    string dir = Path.Combine(rootExportPath, "Shaders");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".txt");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    string info = $"Shader Name: {shader.name}\n" +
+                                  $"Render Queue: {shader.renderQueue}\n" +
+                                  $"Maximum LOD: {shader.maximumLOD}\n" +
+                                  $"Supported: {shader.isSupported}\n" +
+                                  $"Property Count: {shader.GetPropertyCount()}\n";
+                    for (int i = 0; i < shader.GetPropertyCount(); i++)
+                    {
+                        info += $"  [{i}] {shader.GetPropertyName(i)} ({shader.GetPropertyType(i)}): {shader.GetPropertyDescription(i)}\n";
+                    }
+                    System.IO.File.WriteAllText(savePath, info, Encoding.UTF8);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出着色器: {savePath}");
+                    return;
+                }
+
+                // ==================== 动画剪辑 (AnimationClip) ====================
+                if (asset is AnimationClip animClip)
+                {
+                    string dir = Path.Combine(rootExportPath, "Animations");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".json");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    // 使用反射获取动画信息（避免直接依赖 UnityEditor API）
+                    var info = new System.Text.StringBuilder();
+                    info.AppendLine("{");
+                    info.AppendLine($"  \"name\": \"{EscapeJson(animClip.name)}\",");
+                    info.AppendLine($"  \"length\": {animClip.length},");
+                    info.AppendLine($"  \"frameRate\": {animClip.frameRate},");
+                    info.AppendLine($"  \"wrapMode\": \"{animClip.wrapMode}\",");
+                    info.AppendLine($"  \"legacy\": {animClip.legacy.ToString().ToLower()},");
+                    info.AppendLine($"  \"localBounds\": {{ \"center\": [{animClip.localBounds.center.x},{animClip.localBounds.center.y},{animClip.localBounds.center.z}], \"extents\": [{animClip.localBounds.extents.x},{animClip.localBounds.extents.y},{animClip.localBounds.extents.z}] }}");
+                    info.AppendLine("}");
+                    System.IO.File.WriteAllText(savePath, info.ToString(), Encoding.UTF8);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出动画剪辑: {savePath}");
+                    return;
+                }
+
+                // ==================== 游戏对象/预制体 (GameObject) ====================
+                if (asset is GameObject gameObject)
+                {
+                    string dir = Path.Combine(rootExportPath, "GameObjects");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".json");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    ExportGameObject(gameObject, savePath);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出游戏对象: {savePath}");
+                    return;
+                }
+
+                // ==================== 立方体贴图 (Cubemap) ====================
+                if (asset is Cubemap cubemap)
+                {
+                    string dir = Path.Combine(rootExportPath, "Cubemaps");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".png");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    // 导出为普通贴图（取第一个面）
+                    Texture2D faceTex = new Texture2D(cubemap.width, cubemap.height, cubemap.format, false);
+                    faceTex.SetPixels(cubemap.GetPixels(CubemapFace.PositiveX));
+                    faceTex.Apply();
+                    byte[] cubemapBytes = ImageConversion.EncodeToPNG(faceTex);
+                    System.IO.File.WriteAllBytes(savePath, cubemapBytes);
+                    UnityEngine.Object.Destroy(faceTex);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出立方体贴图: {savePath}");
+                    return;
+                }
+
+                // ==================== 字体 (Font) ====================
+                if (asset is Font font)
+                {
+                    string dir = Path.Combine(rootExportPath, "Fonts");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".json");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    var fontInfo = new System.Text.StringBuilder();
+                    fontInfo.AppendLine("{");
+                    fontInfo.AppendLine($"  \"name\": \"{EscapeJson(font.name)}\",");
+                    fontInfo.AppendLine($"  \"fontSize\": {font.fontSize},");
+                    fontInfo.AppendLine($"  \"lineHeight\": {font.lineHeight},");
+                    fontInfo.AppendLine($"  \"material\": \"{(font.material != null ? font.material.name : "null")}\"");
+                    fontInfo.AppendLine("}");
+                    System.IO.File.WriteAllText(savePath, fontInfo.ToString(), Encoding.UTF8);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出字体信息: {savePath}");
+                    return;
+                }
+
+                // ==================== 其他未知类型 → 保存基本信息 ====================
+                {
+                    string dir = Path.Combine(rootExportPath, "Other");
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    string savePath = Path.Combine(dir, safeName + ".json");
+                    if (System.IO.File.Exists(savePath)) return;
+
+                    var info = new System.Text.StringBuilder();
+                    info.AppendLine("{");
+                    info.AppendLine($"  \"name\": \"{EscapeJson(asset.name)}\",");
+                    info.AppendLine($"  \"type\": \"{asset.GetType().FullName}\",");
+                    info.AppendLine($"  \"instanceID\": {asset.GetInstanceID()}");
+                    info.AppendLine("}");
+                    System.IO.File.WriteAllText(savePath, info.ToString(), Encoding.UTF8);
+                    UnityEngine.Debug.Log($">>> [AssetDump] 导出未知类型资源信息: {savePath}");
+                }
+            }
+
+            // ==================== 各类型导出辅助方法 ====================
+
+            /// <summary>导出 Texture2D 为 PNG</summary>
+            private static void ExportTexture2D(Texture2D tex, string savePath)
+            {
+                if (tex == null) return;
+                byte[] bytes = null;
+
+                try
+                {
+                    // 先尝试直接编码
+                    bytes = ImageConversion.EncodeToPNG(tex);
+                }
+                catch
+                {
+                    // 如果贴图不可读，创建可读副本
+                }
+
+                if (bytes == null || bytes.Length < 100)
+                {
+                    RenderTexture tmp = RenderTexture.GetTemporary(
+                        tex.width, tex.height, 0,
+                        RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
+                    Graphics.Blit(tex, tmp);
+                    RenderTexture previous = RenderTexture.active;
+                    RenderTexture.active = tmp;
+
+                    Texture2D readableTex = new Texture2D(tex.width, tex.height);
+                    readableTex.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
+                    readableTex.Apply();
+
+                    RenderTexture.active = previous;
+                    RenderTexture.ReleaseTemporary(tmp);
+
+                    bytes = ImageConversion.EncodeToPNG(readableTex);
+                    UnityEngine.Object.Destroy(readableTex);
+                }
+
+                System.IO.File.WriteAllBytes(savePath, bytes);
+            }
+
+            /// <summary>导出 Sprite 为 PNG</summary>
+            private static void ExportSprite(Sprite sprite, string savePath)
+            {
+                if (sprite == null || sprite.texture == null) return;
+
+                // 从 Sprite 的纹理中提取对应区域
+                Texture2D croppedTex = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height);
+                Color[] pixels = sprite.texture.GetPixels(
+                    (int)sprite.rect.x, (int)sprite.rect.y,
+                    (int)sprite.rect.width, (int)sprite.rect.height);
+                croppedTex.SetPixels(pixels);
+                croppedTex.Apply();
+
+                byte[] bytes = ImageConversion.EncodeToPNG(croppedTex);
+                System.IO.File.WriteAllBytes(savePath, bytes);
+                UnityEngine.Object.Destroy(croppedTex);
+            }
+
+            /// <summary>导出 AudioClip 为 WAV 格式</summary>
+            private static void ExportAudioClip(AudioClip clip, string savePath)
+            {
+                if (clip == null) return;
+
+                int samples = clip.samples * clip.channels;
+                float[] data = new float[samples];
+
+                try
+                {
+                    if (clip.LoadAudioData() && clip.GetData(data, 0))
+                    {
+                        // 写入 WAV 文件
+                        using (FileStream fs = new FileStream(savePath, System.IO.FileMode.Create))
+                        using (BinaryWriter writer = new BinaryWriter(fs))
+                        {
+                            int channels = clip.channels;
+                            int frequency = clip.frequency;
+                            int bitsPerSample = 16;
+                            int byteRate = frequency * channels * (bitsPerSample / 8);
+                            short blockAlign = (short)(channels * (bitsPerSample / 8));
+                            int dataSize = samples * (bitsPerSample / 8);
+
+                            // RIFF header
+                            writer.Write(Encoding.ASCII.GetBytes("RIFF"));
+                            writer.Write(36 + dataSize);
+                            writer.Write(Encoding.ASCII.GetBytes("WAVE"));
+
+                            // fmt subchunk
+                            writer.Write(Encoding.ASCII.GetBytes("fmt "));
+                            writer.Write(16); // subchunk size
+                            writer.Write((short)1); // PCM format
+                            writer.Write((short)channels);
+                            writer.Write(frequency);
+                            writer.Write(byteRate);
+                            writer.Write(blockAlign);
+                            writer.Write((short)bitsPerSample);
+
+                            // data subchunk
+                            writer.Write(Encoding.ASCII.GetBytes("data"));
+                            writer.Write(dataSize);
+
+                            // 将浮点采样转换为 int16
+                            for (int i = 0; i < data.Length; i++)
+                            {
+                                short intSample = (short)(data[i] * short.MaxValue);
+                                writer.Write(intSample);
+                            }
+                        }
+                        UnityEngine.Debug.Log($">>> [AssetDump] WAV导出成功: {savePath} ({clip.channels}ch, {clip.frequency}Hz, {clip.samples} samples)");
+                    }
+                    else
+                    {
+                        // GetData 失败，保存元数据
+                        string metaPath = Path.ChangeExtension(savePath, ".json");
+                        string meta = $"{{\"name\":\"{EscapeJson(clip.name)}\",\"channels\":{clip.channels},\"frequency\":{clip.frequency},\"samples\":{clip.samples},\"length\":{clip.length},\"loadState\":\"{clip.loadState}\",\"note\":\"Could not read raw audio data - clip may have Read/Write disabled\"}}";
+                        System.IO.File.WriteAllText(metaPath, meta, Encoding.UTF8);
+                        UnityEngine.Debug.LogWarning($">>> [AssetDump] 无法读取音频数据，仅保存元数据: {metaPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogWarning($">>> [AssetDump] 音频导出异常 ({clip.name}): {ex.Message}");
+                    // 至少保存元数据
+                    string metaPath = Path.ChangeExtension(savePath, ".json");
+                    string meta = $"{{\"name\":\"{EscapeJson(clip.name)}\",\"channels\":{clip.channels},\"frequency\":{clip.frequency},\"samples\":{clip.samples},\"length\":{clip.length},\"error\":\"{EscapeJson(ex.Message)}\"}}";
+                    System.IO.File.WriteAllText(metaPath, meta, Encoding.UTF8);
+                }
+            }
+
+            /// <summary>导出 Mesh 为 OBJ 格式</summary>
+            private static void ExportMeshToObj(Mesh mesh, string savePath)
+            {
+                if (mesh == null) return;
+
+                using (StreamWriter sw = new StreamWriter(savePath, false, Encoding.UTF8))
+                {
+                    sw.WriteLine($"# Mesh: {mesh.name}");
+                    sw.WriteLine($"# Vertices: {mesh.vertexCount}, Triangles: {mesh.triangles.Length / 3}");
+                    sw.WriteLine($"# Submesh Count: {mesh.subMeshCount}");
+                    sw.WriteLine($"# Bounds: {mesh.bounds}");
+                    sw.WriteLine();
+
+                    // 顶点
+                    Vector3[] vertices = mesh.vertices;
+                    foreach (Vector3 v in vertices)
+                    {
+                        // Unity Y-up → OBJ Y-up (same)
+                        sw.WriteLine($"v {v.x.ToString("F6")} {v.y.ToString("F6")} {v.z.ToString("F6")}");
+                    }
+                    sw.WriteLine();
+
+                    // 法线
+                    Vector3[] normals = mesh.normals;
+                    if (normals != null && normals.Length > 0)
+                    {
+                        foreach (Vector3 n in normals)
+                        {
+                            sw.WriteLine($"vn {n.x.ToString("F6")} {n.y.ToString("F6")} {n.z.ToString("F6")}");
+                        }
+                        sw.WriteLine();
+                    }
+
+                    // UV
+                    Vector2[] uvs = mesh.uv;
+                    if (uvs != null && uvs.Length > 0)
+                    {
+                        foreach (Vector2 uv in uvs)
+                        {
+                            sw.WriteLine($"vt {uv.x.ToString("F6")} {uv.y.ToString("F6")}");
+                        }
+                        sw.WriteLine();
+                    }
+
+                    // 面（三角形）— OBJ 索引从 1 开始
+                    sw.WriteLine($"o {mesh.name}");
+                    int[] triangles = mesh.triangles;
+                    for (int i = 0; i < triangles.Length; i += 3)
+                    {
+                        int a = triangles[i] + 1;
+                        int b = triangles[i + 1] + 1;
+                        int c = triangles[i + 2] + 1;
+
+                        if (normals != null && normals.Length > 0 && uvs != null && uvs.Length > 0)
+                            sw.WriteLine($"f {a}/{a}/{a} {b}/{b}/{b} {c}/{c}/{c}");
+                        else if (normals != null && normals.Length > 0)
+                            sw.WriteLine($"f {a}//{a} {b}//{b} {c}//{c}");
+                        else
+                            sw.WriteLine($"f {a} {b} {c}");
+                    }
+                }
+            }
+
+            /// <summary>导出 Material 信息为 JSON</summary>
+            private static void ExportMaterial(Material mat, string savePath)
+            {
+                if (mat == null) return;
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("{");
+                sb.AppendLine($"  \"name\": \"{EscapeJson(mat.name)}\",");
+                sb.AppendLine($"  \"shader\": \"{(mat.shader != null ? mat.shader.name : "null")}\",");
+                sb.AppendLine($"  \"renderQueue\": {mat.renderQueue},");
+                sb.AppendLine($"  \"globalIlluminationFlags\": \"{mat.globalIlluminationFlags}\",");
+                sb.AppendLine($"  \"properties\": [");
+
+                // 获取所有属性名称
+                string[] propertyNames = {
+                    "_MainTex", "_Color", "_BumpMap", "_MetallicGlossMap", "_EmissionMap",
+                    "_DetailMask", "_DetailAlbedoMap", "_DetailNormalMap", "_ParallaxMap",
+                    "_OcclusionMap", "_SpecGlossMap", "_Metallic", "_Glossiness", "_Smoothness",
+                    "_Cutoff", "_Mode", "_SrcBlend", "_DstBlend", "_ZWrite"
+                };
+
+                bool first = true;
+                foreach (string propName in propertyNames)
+                {
+                    if (mat.HasProperty(propName))
+                    {
+                        if (!first) sb.AppendLine(",");
+                        first = false;
+
+                        sb.Append("    {");
+                        sb.Append($"\"name\":\"{propName}\",");
+
+                        // 根据类型获取值
+                        var propType = mat.GetTexture(propName) != null ? "Texture" : "Unknown";
+                        if (propType == "Texture")
+                        {
+                            var t = mat.GetTexture(propName);
+                            sb.Append($"\"type\":\"Texture\",\"value\":\"{(t != null ? t.name : "null")}\"");
+                        }
+                        else
+                        {
+                            // 尝试作为颜色读取
+                            try {
+                                Color c = mat.GetColor(propName);
+                                sb.Append($"\"type\":\"Color\",\"value\":\"#{ColorUtility.ToHtmlStringRGBA(c)}\"");
+                            }
+                            catch
+                            {
+                                // 尝试作为浮点数读取
+                                try {
+                                    float f = mat.GetFloat(propName);
+                                    sb.Append($"\"type\":\"Float\",\"value\":{f}");
+                                }
+                                catch
+                                {
+                                    sb.Append($"\"type\":\"Unknown\",\"value\":\"?\"");
+                                }
+                            }
+                        }
+                        sb.Append("}");
+                    }
+                }
+
+                sb.AppendLine();
+                sb.AppendLine("  ]");
+                sb.AppendLine("}");
+                System.IO.File.WriteAllText(savePath, sb.ToString(), Encoding.UTF8);
+            }
+
+            /// <summary>导出 GameObject 层次结构为 JSON</summary>
+            private static void ExportGameObject(GameObject go, string savePath)
+            {
+                if (go == null) return;
+
+                var sb = new System.Text.StringBuilder();
+                ExportTransformRecursive(go.transform, sb, 0);
+                System.IO.File.WriteAllText(savePath, sb.ToString(), Encoding.UTF8);
+            }
+
+            private static void ExportTransformRecursive(Transform t, System.Text.StringBuilder sb, int depth)
+            {
+                string indent = new string(' ', depth * 2);
+                sb.AppendLine($"{indent}{{");
+                sb.AppendLine($"{indent}  \"name\": \"{EscapeJson(t.name)}\",");
+                sb.AppendLine($"{indent}  \"position\": [{t.localPosition.x:F3},{t.localPosition.y:F3},{t.localPosition.z:F3}],");
+                sb.AppendLine($"{indent}  \"rotation\": [{t.localRotation.x:F3},{t.localRotation.y:F3},{t.localRotation.z:F3},{t.localRotation.w:F3}],");
+                sb.AppendLine($"{indent}  \"scale\": [{t.localScale.x:F3},{t.localScale.y:F3},{t.localScale.z:F3}],");
+
+                // 列出组件
+                var components = t.GetComponents<Component>();
+                sb.AppendLine($"{indent}  \"components\": [");
+                for (int i = 0; i < components.Length; i++)
+                {
+                    var c = components[i];
+                    if (c == null) continue;
+                    string comma = (i < components.Length - 1) ? "," : "";
+                    sb.AppendLine($"{indent}    \"{c.GetType().Name}\"{comma}");
+                }
+                sb.AppendLine($"{indent}  ],");
+
+                // 递归子对象
+                sb.AppendLine($"{indent}  \"children\": [");
+                for (int i = 0; i < t.childCount; i++)
+                {
+                    ExportTransformRecursive(t.GetChild(i), sb, depth + 3);
+                    if (i < t.childCount - 1) sb.AppendLine(",");
+                }
+                if (t.childCount > 0) sb.AppendLine();
+                sb.AppendLine($"{indent}  ]");
+
+                sb.Append($"{indent}}}");
+            }
+
+            /// <summary>检测字节数组是否为文本内容</summary>
+            private static bool IsTextContent(byte[] bytes)
+            {
+                if (bytes == null || bytes.Length == 0) return false;
+                int checkLen = Math.Min(bytes.Length, 4096);
+                for (int i = 0; i < checkLen; i++)
+                {
+                    if (bytes[i] == 0) return false; // null字节 → 二进制
+                }
+                return true;
+            }
+
+            /// <summary>转义 JSON 字符串中的特殊字符</summary>
+            private static string EscapeJson(string s)
+            {
+                if (string.IsNullOrEmpty(s)) return "";
+                return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
             }
 
             // 拦截异步加载
