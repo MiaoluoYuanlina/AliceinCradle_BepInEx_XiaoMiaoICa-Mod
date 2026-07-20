@@ -130,7 +130,7 @@
       <DependentUpon>Form_protocol.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="App.config" />
-    <EmbeddedResource Include="file\BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip" />
+    <EmbeddedResource Include="file\BepInEx_UnityMono_x64_3febd6a_6.0.0-be.570.zip" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

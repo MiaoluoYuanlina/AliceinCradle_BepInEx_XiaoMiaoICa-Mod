@@ -29,10 +29,10 @@ namespace installer_Mod
     internal class Program
     {
         #region 常量
-        readonly string OFFLINE_MOD_MOD5 = "8ba9e5ea8a3bff5d45f6fc6ddf1db8a2";
-        readonly string OFFLINE_BPEEX_MOD5 = "2afe8b0fe5ecdf43c772ebe90762a5dd";
-        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/752/BepInEx-Unity.Mono-win-x64-6.0.0-be.752%2Bdd0655f.zip";
-        readonly string ONLINE_MD5_BEPEX = "2afe8b0fe5ecdf43c772ebe90762a5dd";
+        readonly string OFFLINE_MOD_MOD5 = "A1F44B1B657E65AF082DF21B5CDE868A";
+        readonly string OFFLINE_BPEEX_MOD5 = "9e146e2cd49111928e0cef7e96f1a2f3";
+        readonly string ONLINE_DOWNLOAD_URL_BEPEX = "https://builds.bepinex.dev/projects/bepinex_be/570/BepInEx_UnityMono_x64_3febd6a_6.0.0-be.570.zip";
+        readonly string ONLINE_MD5_BEPEX = "9e146e2cd49111928e0cef7e96f1a2f3";
         readonly string ONLINE_DOWNLOAD_URL_MOD_DOWNLOADTEXT = "http://miaoluoyuanlina.github.io/AIC/Mod/Latest_version_URL.txt";
         readonly string ONLINE_MD5_URL_MOD = "http://miaoluoyuanlina.github.io/AIC/Mod/MD5.txt";
 
@@ -783,7 +783,7 @@ exit
             "Mod及游戏本体都是免费的，如果你是购买而来，证明你被骗啦~",
             "本程序会收集你的日志来更好的维护，如果您不同意，请立即关闭此程序。",
             "",
-            "MOD官网：https://xiaomiaoica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/",
+            "MOD官网：https://xiaomiao.ica.wiki/2024/12/01/alice-in-cradle-bepinex-mod/",
             "GitHub项目:https://github.com/MiaoluoYuanlina/AliceinCradle_BepInEx_XiaoMiaoICa-Mod",
             "原游戏官网:https://aliceincradle.com/",
             "",//20
@@ -999,7 +999,7 @@ exit
                 for (int i = 0; i < 3; i++)
                 {
                     Thread.Sleep(300);
-                    double responseTime = await GetUrlResponseTimeAsync("https://api.xiaomiaoica.wiki");
+                    double responseTime = await GetUrlResponseTimeAsync("https://api.ica.wiki");
                     WriteLine_color("ping:" + responseTime + "ms", ConsoleColor.Blue);
                     if (responseTime >= 0)
                     {
@@ -1062,7 +1062,7 @@ exit
                     URL_delay = 0;
                     WriteLine_color("github官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
                     WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    agentURL_Mod = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=";
+                    agentURL_Mod = "https://api.ica.wiki/agent/index.php?fileUrl=";
                     download_url_Mod_downloadText = agentURL_Mod + download_url_Mod_downloadText;
                     MD5_url_Mod = agentURL_Mod + MD5_url_Mod;
 
@@ -1099,7 +1099,7 @@ exit
                 {
                     WriteLine_color("BepEx官网不可用或延迟过高! URL_delay:" + URL_delay, ConsoleColor.Yellow);
                     WriteLine_color("改用代理Url", ConsoleColor.Yellow);
-                    download_url_BepEx = "https://api.xiaomiaoica.wiki/agent/index.php?fileUrl=" + download_url_BepEx;
+                    download_url_BepEx = "https://api.ica.wiki/agent/index.php?fileUrl=" + download_url_BepEx;
                 }
             }
             #endregion
@@ -1177,7 +1177,7 @@ exit
             else
             {
                 CreatePath(Directory.GetCurrentDirectory() + "/Temp");
-                if (ExportEmbedResources("file.BepInEx_UnityMono_x64_3a54f7e_6.0.0-be.571.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
+                if (ExportEmbedResources("file.BepInEx_UnityMono_x64_3febd6a_6.0.0-be.570.zip", Directory.GetCurrentDirectory() + "/Temp/BepInEx_UnityMono_x64.zip")) 
                 {
                     WriteLine_color("BepExMD5导出成功！", ConsoleColor.Blue);
                 }
