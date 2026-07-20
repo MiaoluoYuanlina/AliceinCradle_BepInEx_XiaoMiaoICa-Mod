@@ -151,7 +151,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         void Awake()
         {
             string gamever = Get_Game_Ver();
-            string modgamedllver = "0.29i";
+            string modgamedllver = "0.29j";
             if (gamever!= modgamedllver)
             {
                 Process.Start("powershell.exe", $"-command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('mod与编译时游戏的dll版本不匹配，如果出现报错，安装最新版游戏或者安装mod适配的游戏版本在尝试！\n当前游戏版本:{gamever}\nmod编译时游戏的版本:{modgamedllver}', '欧尼酱~这是兼容性提示~', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)\"");
@@ -1108,20 +1108,18 @@ EOF;
                 GUILayout.EndHorizontal();
 
 
-                GUILayout.BeginHorizontal();//横排
-                GUILayout.Label("使用什么浏览器启动");
-                if (GUILayout.Button("Google Chrome"))
-                {
-                    GUI_TextField_EventEditor_Objective = "chrome";
-                }
-                if (GUILayout.Button("microsoft Edge"))
-                {
-                    GUI_TextField_EventEditor_Objective = "msedge";
-                }
-                GUILayout.EndHorizontal();
-
-
-                GUI_TextField_EventEditor_Objective = GUILayout.TextField(GUI_TextField_EventEditor_Objective);
+                //GUILayout.BeginHorizontal();//横排
+                //GUILayout.Label("使用什么浏览器启动");
+                //if (GUILayout.Button("Google Chrome"))
+                //{
+                //    GUI_TextField_EventEditor_Objective = "chrome";
+                //}
+                //if (GUILayout.Button("microsoft Edge"))
+                //{
+                //    GUI_TextField_EventEditor_Objective = "msedge";
+                //}
+                //GUILayout.EndHorizontal();
+                //GUI_TextField_EventEditor_Objective = GUILayout.TextField(GUI_TextField_EventEditor_Objective);
 
                 GUILayout.BeginHorizontal();//横排
                 GUILayout.Label("使用那个镜像站"); // 文字
