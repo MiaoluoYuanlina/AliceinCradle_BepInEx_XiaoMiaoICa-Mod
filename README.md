@@ -20,9 +20,9 @@ powershell.exe "irm https://api.ica.wiki/AIC | iex"
 
 ## 项目特点
 
-- 基于 **BepInEx6** 框架开发，带来强大的扩展能力和兼容性。
-- 提供丰富的功能，包括 UI 优化、游戏数据修改、事件编辑器等。
-- 简单易用的一键安装脚本，快速设置 Mod 环境。
+- 基于 **BepInEx6** 框架开发。
+- 提供简单易懂的UI面板。
+- 简单易用的一键安装脚本，快速安装Mod。
 - 开发文档与代码完全开源，方便开发者学习和贡献。
 
 ---
@@ -46,7 +46,7 @@ powershell.exe "irm https://api.ica.wiki/AIC | iex"
 ## 公开日志
 
 我们汇总了玩家安装 Mod 的日志，供大家参考：  
-[查看全部玩家安装日志](https://api.xiaomiaoica.wiki/AIC/log2/log.php)
+[查看全部玩家安装日志](https://api.ica.wiki/AIC/log2/log.php)
 
 ---
 
