@@ -56,13 +56,13 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
 {
 
 
-    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "3.0.3")]
+    [BepInPlugin("AliceinCradle.XiaoMiaoICa.Mod", "AliceinCradle.XiaoMiaoICa.Mod", "3.0.4")]
     public class XiaoMiaoICaMod : BaseUnityPlugin
     {
         
         #region 变量
         //Mod
-        string Mod_ver = "3.0.3";
+        string Mod_ver = "3.0.4";
         string Mod_BepInEx_ver = typeof(BaseUnityPlugin).Assembly.GetName().Version.ToString();
 
         //定义为 Instance
@@ -151,7 +151,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
         void Awake()
         {
             string gamever = Get_Game_Ver();
-            string modgamedllver = "0.29j";
+            string modgamedllver = "0.30i";
             if (gamever!= modgamedllver)
             {
                 Process.Start("powershell.exe", $"-command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('mod与编译时游戏的dll版本不匹配，如果出现报错，安装最新版游戏或者安装mod适配的游戏版本在尝试！\n当前游戏版本:{gamever}\nmod编译时游戏的版本:{modgamedllver}', '欧尼酱~这是兼容性提示~', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)\"");
@@ -163,7 +163,7 @@ namespace AIC_XiaoMiaoICa_Mod_DLL_BpeInEx6
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             //Harmony.CreateAndPatchAll(typeof(XiaoMiaoICaMod));
 
-            var harmony = new Harmony("com.xiaomiao.mod");
+            var harmony = new Harmony("wiki.ica.xiaomiao.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             int count = 0;
             foreach (var method in harmony.GetPatchedMethods()) count++;
@@ -2354,101 +2354,245 @@ EOF;
             }
         }
 
-        [HarmonyPatch] //   监听游戏XX.TX.readTextsAt方法 读取语言文件
+
+
+
+
+
+
+        [HarmonyPatch]
+        public static class NelEvTextRenderer_reserveText_Patch
+        {
+            [HarmonyTargetMethod]
+            private static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(
+                    typeof(nel.NelEvTextRenderer),
+                    "reserveText",
+                    new[]
+                    {
+                typeof(List<string>),
+                typeof(int),
+                typeof(bool)
+                    });
+            }
+
+            //前置
+            [HarmonyPrefix]
+            private static void Prefix(List<string> Atext)
+            {
+                if (!GUI_Bool_AliceTranslation ||
+                    string.IsNullOrEmpty(GUI_string_AliceTranslation_text) ||
+                    Atext == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < Atext.Count; i++)
+                {
+                    string original = Atext[i];
+
+                    if (string.IsNullOrEmpty(original))
+                        continue;
+
+                    string translated =
+                        nel_NelEvTextRenderer_forceProgressNextStack_Patch
+                            .GetContentWithFilter(
+                                GUI_string_AliceTranslation_text,
+                                original);
+
+                    if (string.IsNullOrEmpty(translated))
+                        continue;
+
+                    original = NormalizeLineEndings(original);
+                    translated = NormalizeLineEndings(translated);
+
+                    GUI_Text_AliceTranslation_Tip[0] = original;
+                    GUI_Text_AliceTranslation_Tip[1] = translated;
+
+                    Atext[i] = GUI_Bool_AliceTranslation_Original_show
+                        ? "<c6>翻:<c0>" + translated +
+                          "\n<c5>原:<c7>" + original
+                        : translated + " ";
+                }
+            }
+
+            private static string NormalizeLineEndings(string value)
+            {
+                return value
+                    .Replace("\r\n", "\n")
+                    .Replace("\r", "\n");
+            }
+        }
+
+
+
+
+
+        //[HarmonyPatch] // 监听 XX.TX.readTextsAt(string) 废弃
         public static class XX_TX_readTextsAt_Patch
         {
-            [HarmonyTargetMethod]// 目标
+            [HarmonyTargetMethod]
             static MethodBase TargetMethod()
             {
-                return AccessTools.Method(typeof(TX), "readTextsAt", new Type[] { typeof(string) });
+                return AccessTools.Method(
+                    typeof(TX),
+                    "readTextsAt",
+                    new Type[] { typeof(string) }
+                );
             }
-            [HarmonyPrefix]// 前置
-            public static bool Prefix(string key)
+
+            //[HarmonyPrefix]
+            public static bool Prefix(ref string key)
             {
-                //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] XX.TX.readTextsAt 前置成功命中 拦截此方法执行"); 
-                
-
-
-                // 1. 反射获取私有静态字段 OTxFam
-                var OTxFamField = AccessTools.Field(typeof(TX), "OTxFam");
-                var OTxFamValue = OTxFamField.GetValue(null) as IDictionary;
-
-                // 2. 反射获取私有静态方法 readTexts
-                var readTextsMethod = AccessTools.Method(typeof(TX), "readTexts", new Type[] { typeof(string), typeof(TX.TXFamily) });
-
-                if (OTxFamValue == null || readTextsMethod == null)
+                try
                 {
-                    XiaoMiaoICaMod.Instance.Logger.LogError("无法反射获取 OTxFam 或 readTexts 方法！");
-                    return true; // 反射失败则运行原逻辑
-                }
+                    XiaoMiaoICaMod.Instance.Logger.LogInfo(
+                        $">>> [XiaoMiaoMod] TX.readTextsAt Prefix 命中: "+key
+                    );
 
-                bool flag = false;
-                if (TX.isStart(key, "!", 0))
-                {
-                    flag = true;
-                    key = TX.slice(key, 1);
-                }
+                    // 获取 OTxFam
+                    FieldInfo OTxFamField =
+                        AccessTools.Field(typeof(TX), "OTxFam");
 
-                // 3. 遍历 OTxFam
-                foreach (DictionaryEntry entry in OTxFamValue)
-                {
-                    string langKey = entry.Key as string;
-                    TX.TXFamily family = entry.Value as TX.TXFamily;
-
-                    if (!flag || langKey == "_")
+                    if (OTxFamField == null)
                     {
-                        // 构建路径: localization/zh/zhItems.txt (假设 key 是 Items)
-                        string folderPath = Path.Combine("localization", langKey);
-                        string fileName = langKey + key + ".txt";
-                        string fullPath = Path.Combine(folderPath, fileName);
+                        XiaoMiaoICaMod.Instance.Logger.LogError(
+                            "[XiaoMiaoMod] 找不到 TX.OTxFam"
+                        );
 
+                        // 让游戏执行原版
+                        return true;
+                    }
 
-                        //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] Key=" + key + "    " + fileName);
-                        if (fileName == "ev_mountain.txt")
+                    IDictionary OTxFamValue =
+                        OTxFamField.GetValue(null) as IDictionary;
+
+                    //获取 readTexts
+                    MethodInfo readTextsMethod =
+                        AccessTools.Method(
+                            typeof(TX),
+                            "readTexts",
+                            new Type[]
+                            {
+                        typeof(string),
+                        typeof(TX.TXFamily)
+                            }
+                        );
+
+                    if (OTxFamValue == null || readTextsMethod == null)
+                    {
+                        XiaoMiaoICaMod.Instance.Logger.LogError(
+                            "[XiaoMiaoMod] 无法获取 OTxFam 或 readTexts"
+                        );
+
+                        // 获取失败
+                        return true;
+                    }
+
+                    // 处理!前缀
+                    bool flag = false;
+
+                    if (!string.IsNullOrEmpty(key) &&
+                        key.StartsWith("!"))
+                    {
+                        flag = true;
+
+                        // TX.slice(key, 1)
+                        key = key.Substring(1);
+                    }
+
+                    // 遍历语言
+                    foreach (DictionaryEntry entry in OTxFamValue)
+                    {
+                        string langKey = entry.Key as string;
+                        TX.TXFamily family =
+                            entry.Value as TX.TXFamily;
+
+                        if (langKey == null || family == null)
+                            continue;
+
+                        if (!flag || langKey == "_")
                         {
-                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
-                        }
-                        if (fileName == "ev_s107.txt")
-                        {
-                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
-                        }
-                        if (fileName == "ev_s200.txt")
-                        {
-                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
-                        }
-                        if (fileName == "ev_s210.txt")
-                        {
-                            XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成立！");
-                        }
+                            string folderPath =
+                                Path.Combine(
+                                    "localization",
+                                    langKey
+                                );
 
+                            string fileName =
+                                langKey + key + ".txt";
 
-                        // 读取文件
-                        string text = NKT.readStreamingText(fullPath, !X.DEBUG || !X.DEBUGANNOUNCE);
+                            string fullPath =
+                                Path.Combine(
+                                    folderPath,
+                                    fileName
+                                );
 
-                        if (!TX.noe(text))
-                        {
+                            if (
+                                fileName == "ev_mountain.txt" ||
+                                fileName == "ev_s107.txt" ||
+                                fileName == "ev_s200.txt" ||
+                                fileName == "ev_s210.txt"
+                            )
+                            {
+                                XiaoMiaoICaMod.Instance.Logger.LogInfo(
+                                    $">>> [XiaoMiaoMod] 成立: "+fileName
+                                );
+                            }
 
-                            // 执行私有方法 readTexts(text, family)
-                            //readTextsMethod.Invoke(null, new object[] { text, family });
-                            //XiaoMiaoICaMod.Instance.Logger.LogInfo(">>> [XiaoMiaoMod] 成功加载自定义路径: " + fullPath);
+                            // 读取语言文件
+                            string text =
+                                NKT.readStreamingText(
+                                    fullPath,
+                                    !X.DEBUG || !X.DEBUGANNOUNCE
+                                );
+
+                            if (!TX.noe(text))
+                            {
+                                XiaoMiaoICaMod.Instance.Logger.LogInfo(
+                                    $">>> [XiaoMiaoMod] 加载: "+fullPath
+                                );
+
+                                // 调用原来的 readTexts
+                                readTextsMethod.Invoke(
+                                    null,
+                                    new object[]
+                                    {
+                                text,
+                                family
+                                    }
+                                );
+                            }
                         }
                     }
+                    return false;
                 }
-
-
-
-
-                return true;
-            }
-            //[HarmonyPostfix]// 后置
-            public static void Postfix(MosaicShower __instance)
-            {
-                if (GUI_Bool_NOApplyDamage == true)
+                catch (Exception e)
                 {
-                    //UnityEngine.Debug.Log(">>> [XiaoMiaoMod] XX.TX.readTextsAt 成功命中！");
+                    XiaoMiaoICaMod.Instance.Logger.LogError(
+                        "[XiaoMiaoMod] TX.readTextsAt Patch 异常:\n" + e
+                    );
 
+                    // 我们自己的代码异常时，
+                    // 尝试交给游戏原版处理。
+                    return true;
                 }
+            }
 
+            [HarmonyPostfix]
+            public static void Postfix(string key)
+            {
+                // 注意：
+                // TX.readTextsAt 是静态方法，
+                // 不要写 MosaicShower __instance。
+
+                if (GUI_Bool_NOApplyDamage)
+                {
+                    // XiaoMiaoICaMod.Instance.Logger.LogInfo(
+                    //     $">>> [XiaoMiaoMod] TX.readTextsAt 处理结束: {key}"
+                    // );
+                }
             }
         }
 
