@@ -32,13 +32,11 @@ class EventEditorModMiddleware
 
     internal class Program
     {
-        static int Game_PID = 0;
-        static string Game_directory = "";
-
         // UI thread synchronization context for marshaling form creation
         private static SynchronizationContext _uiSyncContext;
-        // Track the current WebView form
-        private static webView _currentForm;
+        // Each editor window owns its own WebView and editing state.
+        private static readonly List<webView> _openForms = new List<webView>();
+        private static int _nextWindowId;
 
         [STAThread]
         static void Main(string[] args)
@@ -162,16 +160,16 @@ class EventEditorModMiddleware
 
                     if (Json.Type == "EventEditor_Start")
                     {
-                        Game_directory = Json.directory;
-                        Game_PID = Json.Pid;
-                        Console.WriteLine("#XiaoMiaoICa: Game_PID:" + Game_PID);
-                        Console.WriteLine("#XiaoMiaoICa: Game_directory:" + Game_directory);
+                        string gameDirectory = Json.directory;
+                        int gamePid = Json.Pid;
+                        Console.WriteLine("#XiaoMiaoICa: Game_PID:" + gamePid);
+                        Console.WriteLine("#XiaoMiaoICa: Game_directory:" + gameDirectory);
 
                         // Marshal the form creation to the UI thread
                         string editorUrl = Json.EditorUrl;
                         _uiSyncContext.Post(_ =>
                         {
-                            StartForm(editorUrl);
+                            StartForm(editorUrl, gameDirectory, gamePid);
                         }, null);
                     }
 
@@ -205,27 +203,20 @@ class EventEditorModMiddleware
 
         /// <summary>
         /// Create and show the WebView2 form on the UI thread.
-        /// Replaces the old Start() method that used Playwright + external browser.
+        /// Keep existing editors open so each window can edit a different project.
         /// </summary>
-        static void StartForm(string EditorUrl)
+        public static void StartForm(string editorUrl, string gameDirectory, int gamePid)
         {
-            // Close existing form if any (one browser instance at a time)
-            if (_currentForm != null && !_currentForm.IsDisposed)
+            var form = new webView(editorUrl, gameDirectory, gamePid);
+            form.Text += " - 窗口 " + (++_nextWindowId);
+            _openForms.Add(form);
+            form.FormClosed += (s, e) =>
             {
-                Console.WriteLine("关闭旧的 WebView 表单");
-                _currentForm.Close();
-                _currentForm.Dispose();
-                _currentForm = null;
-            }
-
-            _currentForm = new webView(EditorUrl, Game_directory, Game_PID);
-            _currentForm.FormClosed += (s, e) =>
-            {
-                _currentForm = null;
-                Console.WriteLine("WebView 表单已关闭");
+                _openForms.Remove(form);
+                Console.WriteLine("WebView 表单已关闭，剩余窗口: " + _openForms.Count);
             };
-            _currentForm.Show();
-            Console.WriteLine("WebView 表单已打开，内嵌浏览器已启动");
+            form.Show();
+            Console.WriteLine("WebView 表单已打开，当前窗口: " + _openForms.Count);
         }
 
         public class DataJson

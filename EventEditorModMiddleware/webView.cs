@@ -49,7 +49,21 @@ namespace EventEditorUI
             {
                 Dock = DockStyle.Fill
             };
+            _webViewControl.KeyDown += OnBrowserKeyDown;
             this.Controls.Add(_webViewControl);
+
+            var menuStrip = new MenuStrip();
+            var windowMenu = new ToolStripMenuItem("窗口(&W)");
+            var newWindowItem = new ToolStripMenuItem("新建编辑器窗口(&N)")
+            {
+                ShortcutKeys = Keys.Control | Keys.N
+            };
+            newWindowItem.Click += (sender, e) =>
+                EventEditorModMiddleware.Program.StartForm(_editorUrl, _gameDirectory, _gamePid);
+            windowMenu.DropDownItems.Add(newWindowItem);
+            menuStrip.Items.Add(windowMenu);
+            this.MainMenuStrip = menuStrip;
+            this.Controls.Add(menuStrip);
 
             this.Load += Form_Load;
             this.FormClosing += Form_FormClosing;
@@ -57,12 +71,27 @@ namespace EventEditorUI
 
         // ==================== Form Lifecycle ====================
 
+        private void OnBrowserKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData != (Keys.Control | Keys.N)) return;
+
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            // Leave the browser's keyboard callback before initializing another WebView.
+            BeginInvoke(new Action(() =>
+            {
+                if (!IsDisposed && !Disposing)
+                    EventEditorModMiddleware.Program.StartForm(_editorUrl, _gameDirectory, _gamePid);
+            }));
+        }
+
         private async void Form_Load(object sender, EventArgs e)
         {
             try
             {
                 // Initialize WebView2 (uses Evergreen runtime, pre-installed on Windows 11)
                 await _webViewControl.EnsureCoreWebView2Async(null);
+                if (IsDisposed || Disposing || _webViewControl == null) return;
 
                 // Wire up events
                 _webViewControl.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
@@ -74,6 +103,7 @@ namespace EventEditorUI
             }
             catch (Exception ex)
             {
+                if (IsDisposed || Disposing) return;
                 MessageBox.Show(
                     "WebView2 Runtime 未安装。\n\n" +
                     "请从以下链接安装:\nhttps://go.microsoft.com/fwlink/p/?LinkId=2124703\n\n" +
@@ -90,8 +120,11 @@ namespace EventEditorUI
             // Clean up WebView2
             if (_webViewControl != null)
             {
-                _webViewControl.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
-                _webViewControl.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                if (_webViewControl.CoreWebView2 != null)
+                {
+                    _webViewControl.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
+                    _webViewControl.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                }
                 _webViewControl.Dispose();
                 _webViewControl = null;
             }
